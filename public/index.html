@@ -9,6 +9,22 @@
 <body>
   <canvas id="map-canvas"></canvas>
 
+  <div id="event-panel" style="display:none">
+    <div id="event-placeholder">Take a step to discover what lies ahead...</div>
+    <div id="current-event" style="display:none">
+      <div class="event-header">
+        <span id="event-badge" class="event-badge"></span>
+        <span id="event-biome-tag" class="event-biome-tag"></span>
+      </div>
+      <div id="event-title" class="event-title"></div>
+      <div id="event-desc" class="event-desc"></div>
+    </div>
+    <div id="event-log-section" style="display:none">
+      <div class="event-log-divider"></div>
+      <div id="event-log-list"></div>
+    </div>
+  </div>
+
   <div id="players-panel" style="display:none">
     <h3>Party</h3>
     <div id="party-list"></div>
@@ -16,9 +32,14 @@
 
   <div id="hud">
     <span id="player-count"></span>
+    <span id="current-biome"></span>
+    <span id="step-count"></span>
     <span id="vote-status"></span>
     <span id="status"></span>
+    <button id="gm-toggle" style="display:none; margin-left: 20px; padding: 5px 10px; background: #555; color: #fff; border: 1px solid #888; border-radius: 3px; cursor: pointer;">GM View: OFF</button>
   </div>
+
+  <div id="hex-tooltip"></div>
 
   <div id="lobby">
     <div id="lobby-box">

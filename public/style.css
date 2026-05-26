@@ -25,7 +25,24 @@ body {
   padding: 0 16px;
   z-index: 10;
 }
-#status { color: #555; }
+#status        { color: #555; }
+#current-biome { color: #a8c878; }
+#step-count    { color: #888; font-style: italic; }
+
+#hex-tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: rgba(0,0,0,0.72);
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #ccc;
+  font-family: Georgia, serif;
+  font-size: 0.75rem;
+  padding: 3px 9px;
+  display: none;
+  z-index: 20;
+  white-space: nowrap;
+}
 
 /* ---- Players panel ---- */
 #players-panel {
@@ -56,6 +73,89 @@ body {
 .player-icon { font-size: 1rem; }
 .player-name-text { color: #e0e0e0; font-size: 0.84rem; display: block; }
 .player-class-text { color: #666; font-size: 0.72rem; display: block; }
+
+/* ---- Event panel ---- */
+#event-panel {
+  position: fixed;
+  top: 228px;
+  right: 12px;
+  width: 220px;
+  background: rgba(0,0,0,0.68);
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  padding: 12px 14px;
+  z-index: 10;
+  max-height: calc(100vh - 270px);
+  overflow-y: auto;
+}
+#event-placeholder {
+  color: #444;
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+.event-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 7px;
+}
+.event-badge {
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+.event-badge.creature   { background: #4a1010; color: #e07070; }
+.event-badge.item       { background: #3a2e08; color: #c9a84c; }
+.event-badge.aberration { background: #2a1045; color: #b080e8; }
+.event-biome-tag {
+  color: #555;
+  font-size: 0.72rem;
+  font-style: italic;
+}
+.event-title {
+  color: #e8e8e8;
+  font-size: 0.95rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+.event-desc {
+  color: #999;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.event-log-divider {
+  border-top: 1px solid #222;
+  margin: 10px 0;
+}
+.event-log-entry {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+.event-log-entry:last-child { border-bottom: none; }
+.event-log-badge {
+  font-size: 0.6rem;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.event-log-badge.creature   { background: #4a1010; color: #e07070; }
+.event-log-badge.item       { background: #3a2e08; color: #c9a84c; }
+.event-log-badge.aberration { background: #2a1045; color: #b080e8; }
+.event-log-title {
+  color: #777;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* ---- Lobby overlay ---- */
 #lobby {
