@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hexcrawl</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="map-canvas"></canvas>
+
+  <div id="players-panel" style="display:none">
+    <h3>Party</h3>
+    <div id="party-list"></div>
+  </div>
+
+  <div id="hud">
+    <span id="player-count"></span>
+    <span id="vote-status"></span>
+    <span id="status"></span>
+  </div>
+
+  <div id="lobby">
+    <div id="lobby-box">
+      <h1>Hexcrawl</h1>
+
+      <p class="lobby-label">Your Name</p>
+      <input type="text" id="player-name" maxlength="20"
+             placeholder="Enter adventurer name..." autocomplete="off">
+
+      <p class="lobby-label">Choose Your Class</p>
+      <div id="class-grid">
+        <div class="class-card" data-class="warrior">
+          <span class="class-icon">⚔️</span>
+          <span class="class-name">Warrior</span>
+          <span class="class-desc">Hardy fighter and shield-bearer of the realm</span>
+        </div>
+        <div class="class-card" data-class="ranger">
+          <span class="class-icon">🏹</span>
+          <span class="class-name">Ranger</span>
+          <span class="class-desc">Scout, archer, wilderness survivalist</span>
+        </div>
+        <div class="class-card" data-class="mage">
+          <span class="class-icon">🔮</span>
+          <span class="class-name">Mage</span>
+          <span class="class-desc">Arcane power, keeper of ancient spells</span>
+        </div>
+        <div class="class-card" data-class="rogue">
+          <span class="class-icon">🗡️</span>
+          <span class="class-name">Rogue</span>
+          <span class="class-desc">Stealthy, cunning, strikes from shadows</span>
+        </div>
+      </div>
+
+      <div id="lobby-error"></div>
+      <button id="join-btn" disabled>Enter the Realm</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
