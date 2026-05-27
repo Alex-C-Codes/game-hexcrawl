@@ -19,7 +19,7 @@
       },
       {
         "id": "chieftain_fortress_rumor",
-        "parent_quest_id": "",
+        "parent_quest_id": "reclaim_the_mine",
         "required_rumor_id": "",
         "title": "Part 3: Confront the Chieftan"
       }
@@ -35,6 +35,84 @@
         "parent_quest_id": null,
         "required_rumor_id": "vampire_bat_rumor",
         "title": "Part 1: Shadows over the Grave"
+      }
+    ]
+  },
+  {
+    "questline_id": "slay_the_dragon_pantheon"
+    "theme": "dragon_scourge",
+    "title": "The Age of Dragons",
+    "description": "Five dragons have awakened across the realm. Hunt them down to save the kingdom.",
+    "is_main_story": true,
+    "required_completed_questlines": [],
+    "nodes": [
+      {
+        "id": "gather_dragon_lore",
+        "parent_quest_id": null,
+        "required_rumor_id": "scholar_dragon_rumor",
+        "title": "Chapter 1: The Gathering Threat",
+        "description": "Speak with the Grand Scholar to uncover the regional domains of the five dragons.",
+        "objectives": { "type": "TALK_TO_NPC", "target_id": "grand_scholar" },
+        "rewards": { "gold": 100 }
+      },
+      {
+        "id": "the_final_reckoning",
+        "parent_quest_id": "gather_dragon_lore",
+        "required_rumor_id": null,
+        "title": "Chapter 2: The Final Reckoning",
+        "description": "All five dragons have fallen. Return to the High King to claim your ultimate reward.",
+    
+        "required_completed_questlines": ["red_dragon_arc", "blue_dragon_arc", "green_dragon_arc"],    
+        "objectives": { "type": "TALK_TO_NPC", "target_id": "high_king" },
+        "rewards": { "gold": 10000, "item_template_id": "dragon_slayer_blade" }
+      }
+    ]
+  },
+  {
+    "questline_id": "red_dragon_arc",
+    "theme": "dragon_scourge",
+    "title": "The Fire of Ignis",
+    "description": "Slay Ignis, the Red Tyrant of the Burning Ridges.",
+    "is_main_story": false,
+    
+    "required_completed_quest_nodes": ["gather_dragon_lore"], 
+    "nodes": [
+      {
+        "id": "red_dragon_scout",
+        "parent_quest_id": null,
+        "required_rumor_id": "red_dragon_sightings_rumor",
+        "title": "Ignis Part 1: Ash and Smoke",
+        "description": "Investigate the volcanic hex where cultists are sacrificing livestock to Ignis.",
+        "objectives": { "type": "CLEAR_DUNGEON", "target_template_id": "dragon_cultist", "target_quantity": 8 },
+        "rewards": { "gold": 500 }
+      },
+      {
+        "id": "slay_red_dragon",
+        "parent_quest_id": "red_dragon_scout",
+        "required_rumor_id": "red_dragon_lair_rumor",
+        "title": "Ignis Part 2: Slay the Beast",
+        "description": "Plunge into the volcanic caldera and destroy Ignis.",
+        "objectives": { "type": "KILL", "target_template_id": "red_dragon_boss", "target_quantity": 1 },
+        "rewards": { "gold": 2500, "item_template_id": "fire_shield" }
+      }
+    ]
+  },
+  {
+    "questline_id": "blue_dragon_arc",
+    "theme": "dragon_scourge",
+    "title": "The Lightning of Fulgur",
+    "description": "Slay Fulgur, the Storm Bringer of the Howling Desert.",
+    "is_main_story": false,
+    "required_completed_quest_nodes": ["gather_dragon_lore"],
+    "nodes": [
+      {
+        "id": "slay_blue_dragon",
+        "parent_quest_id": null,
+        "required_rumor_id": "blue_dragon_lair_rumor",
+        "title": "Fulgur: Strike the Storm",
+        "description": "Scales the lightning ridges and destroy Fulgur.",
+        "objectives": { "type": "KILL", "target_template_id": "blue_dragon_boss", "target_quantity": 1 },
+        "rewards": { "gold": 3000 }
       }
     ]
   }
