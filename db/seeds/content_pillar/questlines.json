@@ -3,6 +3,7 @@
     "questline_id": "blood_axe_uprising",
     "theme": "orc_uprising",
     "title": "The Blood Axe Uprising",
+    "description": "The Great Warlord Nahk is uniting the frenzied orc tribes and goblinoid clans across through brute strength and cunning. He seeks the Dragon Pearl - believing himeslf to be the Great Chosen One (a prophecy uttered in their shaman tribes) destined to rule all of Arland.",
     "nodes": [
       {
         "id": "interrogate_scouts",
