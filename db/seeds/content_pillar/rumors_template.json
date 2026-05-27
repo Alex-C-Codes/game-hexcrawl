@@ -1,0 +1,30 @@
+[
+  {
+    "id": "lost_tomb_rumor",
+    "category": "dungeon",
+    "base_discovery_chance": 0.40,
+    "text_template": "An old miner slams his mug down and whispers about a crumbling stone entrance he found hidden deep within the local {biome}. He swears he heard chanting coming from inside.",
+    "reward_hints": ["ancient_relics", "gold"]
+  },
+  {
+    "id": "bandit_ambush_rumor",
+    "category": "hazard",
+    "base_discovery_chance": 0.50,
+    "text_template": "A panicked merchant warns you that a mercenary group has established a toll checkpoint on the road just a few travel units {direction} of here. They are shaking down anyone without a faction passport.",
+    "reward_hints": ["stolen_supplies", "bounty_gold"]
+  },
+  {
+    "id": "monster_den_rumor",
+    "category": "creature",
+    "base_discovery_chance": 0.30,
+    "text_template": "A local hunter warns that livestock have been disappearing from the outskirts. She tracked massive, clawed footprints heading straight toward a dark cave system in the nearby {biome}.",
+    "reward_hints": ["rare_monster_hides", "trophy"]
+  },
+  {
+    "id": "fabled_weapon_rumor",
+    "category": "legendary_item",
+    "base_discovery_chance": 0.15,
+    "text_template": "A traveling scholar shares a passage from an ancient text. It claims a weapon of immense power was lost centuries ago in a ruin located directly {direction} of this settlement.",
+    "reward_hints": ["magic_weapon"]
+  }
+]
