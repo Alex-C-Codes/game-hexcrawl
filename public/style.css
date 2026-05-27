@@ -256,3 +256,79 @@ body {
 }
 #join-btn:hover:not(:disabled) { background: #ddb85c; }
 #join-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ---- Settlement info card ---- */
+#settlement-card {
+  display: none;
+  position: fixed;
+  width: 232px;
+  background: rgba(8, 6, 18, 0.96);
+  border: 1px solid #4a3a20;
+  border-radius: 8px;
+  padding: 14px 16px;
+  pointer-events: none;
+  z-index: 50;
+  box-shadow: 0 6px 32px rgba(0,0,0,0.85), 0 0 0 1px rgba(201,168,76,0.07);
+}
+.sc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 9px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #25180a;
+}
+.sc-name {
+  color: #c9a84c;
+  font-size: 1.05rem;
+  font-weight: bold;
+  letter-spacing: 0.03em;
+}
+.sc-tier {
+  color: #5a4a28;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.sc-desc {
+  color: #8a7a60;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  font-style: italic;
+  margin-bottom: 9px;
+}
+.sc-pop {
+  color: #5a5040;
+  font-size: 0.7rem;
+  margin-bottom: 10px;
+}
+.sc-section {
+  display: block;
+  color: #4a3a20;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.sc-buildings ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sc-buildings li {
+  color: #a09070;
+  font-size: 0.74rem;
+  padding: 2px 0 2px 12px;
+  position: relative;
+  line-height: 1.4;
+}
+.sc-buildings li::before {
+  content: '·';
+  position: absolute;
+  left: 2px;
+  color: #c9a84c;
+  font-size: 1rem;
+  line-height: 1;
+}

@@ -1,0 +1,88 @@
+{
+    "factions": [
+        {
+            "id": 1,
+            "name": "Arland's Watch",
+            "description": "The guards that protect the city of Arland and its citizens. They are known for their bravery and dedication to maintaining order.",
+            "alignment": "Lawful Good",
+            "behavior_pattern": "Defensive",
+            "goals": [
+                "Protect the city of Arland",
+                "Maintain order and justice",
+                "Defend against external threats"
+            ],
+            "starting_resources": {
+                "gold": 1000,
+                "silver": 500,
+                "copper": 2000,
+                "iron": 100,
+                "stone": 50,
+                "food": 500,
+                "wood": 300,
+                "water": 200,
+                "population": 10000
+            },
+            "primary_locations": [
+                "Arland City Hall",
+                "Arland Barracks",
+                "Arland Watchtower"
+            ],
+            "notable_members": [
+                "King Arland",
+                "Paladin Danse"
+            ],
+            "relationships": {
+                "The Iron Fangs": "Hostile",
+                "The Minutemen": "Neutral",
+                "The Institute": "Hostile"
+            },
+            "starting_roster": [
+            {"creature_template_id": "goblin", "target_quantity": 20},
+            {"creature_template_id": "orc", "target_quantity": 12},
+            {"creature_template_id": "hill_giant", "target_quantity": 1}
+            ]
+        },
+        {
+            "id": 2,
+            "name": "The Iron Fangs",
+            "description": "group of ruthless raiders who have banded together to take advantage of the chaos in the wasteland. They are known for their brutality and willingness to do whatever it takes to achieve their goals.",
+            "alignment": "Neutral Evil",
+            "behavior_pattern": "Aggressive",
+            "goals": [
+                "Raid and pillage settlements for resources",
+                "Expand their territory",
+                "Eliminate rival factions"
+            ],
+            "starting_resources": {
+                "gold": 2000,
+                "silver": 1000,
+                "copper": 5000,
+                "iron": 200,
+                "stone": 100,
+                "food": 1000,
+                "wood": 500,
+                "water": 300,
+                "population": 5000
+            },
+            "primary_locations": [
+                "Iron Fangs Camp",
+                "Abandoned Ruins",
+                "Wasteland Outpost"
+            ],
+            "notable_members": [
+                "Ragnar the Brutal",
+                "Skullcrusher"
+            ],
+            "relationships": {
+                "Arland's Watch": "Hostile",
+                "The Minutemen": "Hostile",
+                "The Institute": "Neutral"
+            },
+            "starting_roster": [
+            {"creature_template_id": "goblin", "target_quantity": 30},
+            {"creature_template_id": "bugbear", "target_quantity": 15},
+            {"creature_template_id": "hill_giant", "target_quantity": 5}
+            ]
+        }
+    ]
+}

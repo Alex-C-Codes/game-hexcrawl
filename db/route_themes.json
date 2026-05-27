@@ -1,0 +1,20 @@
+[
+  {
+    "key": "highland",
+    "biomes": ["mountain", "highland", "hills", "hills"],
+    "encounter_bonus": 0.15,
+    "names": ["The High Pass", "The Stormridge Road", "The Mountain Trail"]
+  },
+  {
+    "key": "wetlands",
+    "biomes": ["swamp", "forest", "forest", "plains"],
+    "encounter_bonus": 0.10,
+    "names": ["The Fen Road", "The Bog Trail", "The Mire Path"]
+  },
+  {
+    "key": "open",
+    "biomes": ["plains", "hills", "plains", "plains"],
+    "encounter_bonus": 0.00,
+    "names": ["The King's Road", "The Merchant Road", "The Bandit Road"]
+  }
+]

@@ -1,0 +1,24 @@
+{
+    "tier_four_bosses": [
+        {
+            "name": "Terminus",
+            "description": "A powerful, ancient, and sentient construct created by a long-lost civilization, designed to guard their most sacred secrets and treasures. In order to protect its charge, Terminus has decided that it must eliminate all potential threats, including the player characters.",
+            "goal": "Terminus seeks to convert all organic life into data, believing that this is the only way to preserve it and prevent it from being corrupted or destroyed. It views the player characters as a threat to its mission and will stop at nothing to eliminate them. He seeks the Dragon Pearl to cast a powerful Time Stop spell that will freeze the world in a single moment, allowing Terminus to methodically convert all life into data without resistance.",
+            "campaign_phases": {
+                "early_game": "people vanish and return 'changed' with no memory of what happened but have a blank stare and a compulsion to return to the location where they were taken. Anmials behave with unnatural coordination.",
+                "mid_game": "Regions become 'processed' by Terminus, with the landscape taking on a more mechanical and artificial appearance. The player characters may encounter areas where the natural environment has been replaced by metal and machinery, and where the local flora and fauna have been transformed into robotic versions of themselves. Animals and villages stuck in perpetual tiime loops, repeating the same actions over and over again. Ecosystems turned into orderly but lifeless archives, people replaeced by obedient thrralls or preserved specimens. Players mysteriously learn/find/see a date (40 days away from the current in-game date) that is being marked as a deadline by various NPCs (oracles, prophets) and factions, but no one seems to know why or what will happen on that day.",
+                "late_game": "Terminus itself is a massive, city-sized construct that serves as the final dungeon and boss encounter. The player characters must navigate through its labyrinthine interior, facing off against its various defenses and minions, before finally confronting Terminus in a climactic battle to determine the fate of the world. Terrminus's output scales up dramatically, converting bioimass, magic, and even planar elemets into moer computational power. The clocktower grows, its spire piercing the sky, with horbiting rings of frozen moments. The sun begins to stutter. The clocktower expands, its mechanicsms grinding continents or stars into data. The player characters may have to make difficult choices about how to confront Terminus, such as whether to try to reason with it, attempt to shut it down, or even sacrifice themselves to stop it."
+            }
+        },
+        {
+            "name": "The Lich King",
+            "description": "The Lich King is the ultimate antagonist in the campaign, ruling over the undead Scourge.",
+            "goal": "The Lich King seeks to conquer the world and spread his undead influence across the land. He is a powerful necromancer who commands legions of undead minions, and he will stop at nothing to achieve his goals. He seeks the Dragon Pearl to amplify his necromantic powers, allowing him to raise an unstoppable army of undead and plunge the world into eternal darkness.",
+            "campaign_phases": {
+                "early_game": "The Lich King's influence begins to spread, corrupting the land and turning living beings into undead servants.",
+                "mid_game": "The Lich King's power grows, and the player characters must face off against increasingly powerful undead minions and dark magic.",
+                "late_game": "The Lich King himself appears as the final boss, requiring the player characters to use all their skills and resources to defeat him."
+            }
+        }
+    ]
+}

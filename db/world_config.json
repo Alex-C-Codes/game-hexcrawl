@@ -1,0 +1,43 @@
+{
+  "anchor_count":        1,
+  "min_anchor_dist":     12,
+  "anchor_spread":       40,
+  "core_paint_radius":   1,
+  "edge_paint_radius":   3,
+  "path_avoidance_cost": 80,
+  "gen_radius":          3,
+  "anchor_types":        ["village", "town", "dungeon", "ruins", "tower", "cave"],
+  "default_biomes":      ["plains", "plains", "plains", "hills", "hills", "forest"],
+
+  "starting_settlement": {
+    "catalog_id":  1,
+    "q":           0,
+    "r":           0,
+    "is_landmark": true
+  },
+
+  "party_start": {
+    "q": 0,
+    "r": 6
+  },
+
+  "calendar": {
+    "days_per_month": 30,
+    "months_per_year": 12,
+    "month_names": [
+      "Icegale", "Thawmoon", "Snowmelt", "Bloom",
+      "Greenwood", "Midsummer", "Highsun", "Harvest",
+      "Ashfall", "Dimming", "Frostfall", "Deepwinter"
+    ],
+    "time_periods": [
+      { "name": "Morning", "from": 0.0,   "to": 0.333 },
+      { "name": "Midday",  "from": 0.333, "to": 0.667 },
+      { "name": "Evening", "from": 0.667, "to": 1.0   }
+    ],
+    "starting_date": {
+      "month":      4,
+      "day_range":  [1, 30],
+      "year_range": [7000, 10000]
+    }
+  }
+}

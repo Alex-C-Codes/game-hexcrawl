@@ -1,0 +1,80 @@
+{
+  "static_settlements": [
+    {
+      "id": 1,
+      "name": "Hearth",
+      "description": "The last safe village before the wilderness begins. Smoke rises from its chimneys day and night. Most roads eventually lead back here.",
+      "tier_level": 2,
+      "starting_population": 200,
+      "layout_style": "timber",
+      "guaranteed_buildings": ["tavern", "general_store", "healer", "stables"],
+      "unique_tags": ["starting_hub", "safe_haven"],
+      "faction": "The Hearthfolk",
+      "faction_description": "A tight-knit community of farmers, hunters, and craftsmen who value tradition, hospitality, and self-reliance. They are wary of outsiders but will welcome those who prove themselves trustworthy and respectful of their way of life. The Hearthfolk are skilled in agriculture, animal husbandry, and basic survival skills, making them an essential resource for adventurers venturing into the wilderness. They have a strong connection to the land and are known for their hearty meals, warm hearths, and lively festivals that celebrate the changing seasons."
+    },
+    {
+      "id": 2,
+      "name": "Arlandria",
+      "description": "The ",
+      "tier_level": 2,
+      "starting_population": 200,
+      "layout_style": "timber",
+      "guaranteed_buildings": ["tavern", "general_store", "healer", "stables"],
+      "unique_tags": ["starting_hub", "safe_haven"],
+      "faction": "The Arlandrians",
+      "faction_description": "A diverse community of merchants, artisans, and travelers who value commerce, innovation, and cultural exchange. They are known for their hospitality and their ability to adapt to changing circumstances. The Arlandrians are skilled in trade, negotiation, and the arts of diplomacy, making them valuable allies for adventurers seeking to navigate the complex political landscape of the region. They have a strong connection to the land and are known for their vibrant markets, lively festivals, and welcoming atmosphere."
+    },
+    {
+      "id": 3,
+      "name": "Oakhaven",
+      "description": "A bustling frontier trading town built around a massive, ancient oak tree.",
+      "tier_level": 3,
+      "starting_population": 1200,
+      "layout_style": "timber_and_stone",
+      "guaranteed_buildings": ["blacksmith", "tavern", "marketplace_stalls", "town_hall"],
+      "unique_tags": ["high_fertility", "trade_hub"]
+    },
+    {
+      "id": 4,
+      "name": "Grip of the Mountain",
+      "description": "A fortified, heavy-stone mining outpost chiseled directly into the mountain cliffs.",
+      "tier_level": 2,
+      "starting_population": 450,
+      "layout_style": "dwarven_stone",
+      "guaranteed_buildings": ["smelter", "armory", "deep_mine_shaft"],
+      "unique_tags": ["rich_iron_vein", "fortified"]
+    }
+  ],
+  "procedural_blueprints": {
+    "tier_settings": {
+      "1": {
+        "title": "Hamlet",
+        "grid_size": { "width": 30, "height": 30 },
+        "population_range": { "min": 20, "max": 99 },
+        "allowed_buildings": ["huts", "well", "small_shrine"],
+        "has_walls": false,
+        "has_marketplace": false
+      },
+      "2": {
+        "title": "Village",
+        "grid_size": { "width": 50, "height": 50 },
+        "population_range": { "min": 100, "max": 500 },
+        "allowed_buildings": ["wooden_houses", "tavern", "general_store", "granary"],
+        "has_walls": false,
+        "has_marketplace": true
+      },
+      "3": {
+        "title": "Walled Town",
+        "grid_size": { "width": 80, "height": 80 },
+        "population_range": { "min": 501, "max": 2500 },
+        "allowed_buildings": ["stone_houses", "blacksmith", "inn", "barracks", "market_square"],
+        "has_walls": true,
+        "has_marketplace": true
+      }
+    },
+    "name_generation": {
+      "prefixes": ["River", "Stone", "Green", "Winter", "Oak", "Iron", "Shadow", "Mud"],
+      "suffixes": ["wood", "ford", "haven", "crest", "wall", "brook", "run", "fall", "keep"]
+    }
+  }
+}

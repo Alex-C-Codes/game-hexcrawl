@@ -32,14 +32,17 @@
 
   <div id="hud">
     <span id="player-count"></span>
+    <span id="world-time"></span>
     <span id="current-biome"></span>
     <span id="step-count"></span>
     <span id="vote-status"></span>
     <span id="status"></span>
     <button id="gm-toggle" style="display:none; margin-left: 20px; padding: 5px 10px; background: #555; color: #fff; border: 1px solid #888; border-radius: 3px; cursor: pointer;">GM View: OFF</button>
+    <button id="new-game-btn" style="display:none; margin-left: 8px; padding: 5px 10px; background: #3a2a4a; color: #fff; border: 1px solid #888; border-radius: 3px; cursor: pointer;">New Game</button>
   </div>
 
   <div id="hex-tooltip"></div>
+  <div id="settlement-card"></div>
 
   <div id="lobby">
     <div id="lobby-box">
@@ -79,6 +82,8 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="worldmap.js"></script>
+  <script src="battlemap.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

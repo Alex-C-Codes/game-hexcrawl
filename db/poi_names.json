@@ -1,0 +1,26 @@
+{
+  "village": {
+    "prefixes": ["Ash","Oak","Stone","Mill","River","Black","Green","Grey","Iron","Crow"],
+    "suffixes": ["haven","wick","ford","stead","bridge","hollow","gate","moor","vale","cross"]
+  },
+  "town": {
+    "prefixes": ["Salt","Storm","Grey","Drake","Iron","East","North","South","West","Gold"],
+    "suffixes": ["ford","bridge","town","wick","gate","stead","cross","haven","moor","vale"]
+  },
+  "dungeon": {
+    "adj":  ["Forsaken","Dread","Black","Sunken","Cursed","Hollow","Ancient","Grim","Ruined","Sealed"],
+    "noun": ["Dungeon","Vault","Crypt","Catacomb","Labyrinth","Prison","Depths","Tomb","Ruin","Underhold"]
+  },
+  "ruins": {
+    "adj":  ["Ancient","Shattered","Forgotten","Sunken","Crumbling","Cursed","Silent","Broken","Fallen","Lost"],
+    "noun": ["Citadel","Keep","Hall","Temple","Gate","Vault","Spire","Throne","Sanctum","Archive"]
+  },
+  "tower": {
+    "adj":  ["Broken","High","Dark","Lone","Frost","Ash","Bone","Storm","Ember","Grim"],
+    "noun": ["Tower","Spire","Watchtower","Pinnacle","Beacon","Turret","Obelisk","Column","Pillar","Needle"]
+  },
+  "cave": {
+    "adj":  ["Deep","Dark","Cold","Hollow","Stone","Iron","Shadow","Echo","Bone","Black"],
+    "noun": ["Cave","Cavern","Grotto","Den","Delve","Warren","Pit","Lair","Burrow","Passage"]
+  }
+}

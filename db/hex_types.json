@@ -1,0 +1,164 @@
+[
+  {
+    "key": "ocean",
+    "label": "Ocean",
+    "color": "#1a4a6e",
+    "traversable": false,
+    "requires_boat": true,
+    "encounter_chance": 1.0,
+    "travel_cost": null,
+    "events": [
+      { "type": "creature",   "title": "Sea Serpent",       "desc": "A serpentine neck rises from the depths, water sheeting off dark scales." },
+      { "type": "creature",   "title": "Kraken's Reach",    "desc": "A single tentacle breaks the surface nearby — forty feet long and searching." },
+      { "type": "creature",   "title": "Hostile Merfolk",   "desc": "Scaled figures surface armed with bone tridents. They do not look welcoming." },
+      { "type": "item",       "title": "Floating Wreckage", "desc": "Debris bobs on the surface — a sealed chest among it, stamped with a royal cipher." },
+      { "type": "item",       "title": "Sunken Ruins",      "desc": "The water is clear. Far below, the outline of towers and streets is unmistakable." },
+      { "type": "aberration", "title": "The Maelstrom",     "desc": "A spiral of water opens on the horizon. It is enormous. It is moving toward you." },
+      { "type": "aberration", "title": "Time Fog",          "desc": "A bank of silver mist rolls in. When it clears, the stars are in the wrong positions." }
+    ]
+  },
+  {
+    "key": "coast",
+    "label": "Coast",
+    "color": "#3a8abf",
+    "traversable": true,
+    "requires_boat": false,
+    "encounter_chance": 0.20,
+    "travel_cost": 0.333,
+    "events": [
+      { "type": "creature",   "title": "Pirate Raiders",  "desc": "A longboat beaches nearby. Armed sailors fan out, scanning for valuables." },
+      { "type": "creature",   "title": "Giant Crab",      "desc": "The rocks shift — they aren't rocks. A crab the size of a barn heaves upright." },
+      { "type": "creature",   "title": "Sea Hag",         "desc": "A figure beckons from the tideline, beautiful from a distance, terrifying up close." },
+      { "type": "item",       "title": "Shipwreck",       "desc": "A wrecked hull lies in the shallows. The cargo hold is accessible at low tide." },
+      { "type": "item",       "title": "Sea Cave Cache",  "desc": "A cave behind a waterfall holds crates stamped with a long-defunct trading company." },
+      { "type": "aberration", "title": "Ghost Ship",      "desc": "A galleon glides silently through the fog — no crew, no wind, no explanation." },
+      { "type": "aberration", "title": "Siren Song",      "desc": "Music drifts from the sea. The most beautiful sound any of you has ever heard. It's getting louder." }
+    ]
+  },
+  {
+    "key": "plains",
+    "label": "Plains",
+    "color": "#7eb05a",
+    "traversable": true,
+    "requires_boat": false,
+    "encounter_chance": 0.15,
+    "travel_cost": 0.333,
+    "events": [
+      { "type": "creature",   "title": "Wolf Pack",        "desc": "A pack of gaunt wolves emerges from the tall grass, yellow eyes locked on the party." },
+      { "type": "creature",   "title": "Wandering Ogre",   "desc": "A lumbering ogre blocks the road, demanding a toll of \"shiny things.\"" },
+      { "type": "creature",   "title": "Giant Boar",       "desc": "The ground trembles as a massive boar thunders out of the grass, tusks gleaming." },
+      { "type": "item",       "title": "Merchant's Wagon", "desc": "A painted wagon sits unattended. Its owner is gone, but the goods remain." },
+      { "type": "item",       "title": "Hidden Cache",     "desc": "A loose stone marks a pit. Inside: wrapped provisions and a handful of old coins." },
+      { "type": "aberration", "title": "Fairy Ring",       "desc": "A perfect circle of glowing mushrooms hums with music. Time feels elastic inside." },
+      { "type": "aberration", "title": "Standing Stones",  "desc": "Three ancient menhirs pulse with forgotten power. Their runes shift as you watch." }
+    ]
+  },
+  {
+    "key": "forest",
+    "label": "Forest",
+    "color": "#2d6a4f",
+    "traversable": true,
+    "requires_boat": false,
+    "encounter_chance": 0.30,
+    "travel_cost": 0.5,
+    "events": [
+      { "type": "creature",   "title": "Dire Wolf",        "desc": "A wolf the size of a horse steps between the trees, breath misting in the cool air." },
+      { "type": "creature",   "title": "Giant Spider",     "desc": "Silken webs span the path. Something large stirs in the canopy above." },
+      { "type": "creature",   "title": "Forest Troll",     "desc": "A moss-covered troll lurches from behind a fallen oak, sniffing the air." },
+      { "type": "item",       "title": "Druid's Cache",    "desc": "A hollow tree conceals a bundle of salves, seeds, and a carved wooden token." },
+      { "type": "item",       "title": "Ranger's Camp",    "desc": "An abandoned campsite, still warm. Whoever was here left in a hurry." },
+      { "type": "aberration", "title": "Whispering Grove", "desc": "The trees speak in overlapping voices, arguing about something long forgotten." },
+      { "type": "aberration", "title": "Will-o'-Wisp",     "desc": "A blue light dances between trunks, always just out of reach, leading deeper in." }
+    ]
+  },
+  {
+    "key": "hills",
+    "label": "Hills",
+    "color": "#7a9c52",
+    "traversable": true,
+    "requires_boat": false,
+    "encounter_chance": 0.25,
+    "travel_cost": 0.5,
+    "events": [
+      { "type": "creature",   "title": "Bandit Ambush",     "desc": "Arrows thud into the earth. Rough voices demand surrender from the ridgeline." },
+      { "type": "creature",   "title": "Hill Giant",        "desc": "A giant hurls boulders at birds from the nearest hill — and then notices the party." },
+      { "type": "creature",   "title": "Goblin Warband",    "desc": "A dozen goblins pour over the crest, shrieking and waving rusty blades." },
+      { "type": "item",       "title": "Buried Treasure",   "desc": "A rusted sword pommel sticks from the earth. Pulling it reveals a buried iron box." },
+      { "type": "item",       "title": "Ruined Watchtower", "desc": "A crumbling tower commands the hill. A skeleton clutches a sealed message tube." },
+      { "type": "aberration", "title": "Echo Stones",       "desc": "Certain rocks repeat your words back in different voices, seconds after you move on." },
+      { "type": "aberration", "title": "Gravity Anomaly",   "desc": "Pebbles drift upward in a small clearing. Loose coins float from pockets." }
+    ]
+  },
+  {
+    "key": "highland",
+    "label": "Highland",
+    "color": "#8a9e72",
+    "traversable": true,
+    "requires_boat": false,
+    "encounter_chance": 0.30,
+    "travel_cost": 0.5,
+    "events": [
+      { "type": "creature",   "title": "Griffon",           "desc": "A griffon descends from above with a piercing shriek, wings beating a storm of dust." },
+      { "type": "creature",   "title": "Wyvern",            "desc": "A wyvern circles overhead, its barbed tail trailing poison. It has spotted the party." },
+      { "type": "creature",   "title": "Mountain Lions",    "desc": "Three tawny lions flank the party from opposite ridges, moving in perfect silence." },
+      { "type": "item",       "title": "Fallen Knight",     "desc": "A knight in tarnished armor lies by the path. The sword and shield are still intact." },
+      { "type": "item",       "title": "Hermit's Cave",     "desc": "A recluse offers cryptic warnings and trades a strange flask for bread." },
+      { "type": "aberration", "title": "Ley Line Crossing", "desc": "The air crackles. Spells misfire. The ground hums with invisible power beneath." },
+      { "type": "aberration", "title": "Ghost of the Pass", "desc": "A transparent warrior marches the ridge. It does not notice the living." }
+    ]
+  },
+  {
+    "key": "mountain",
+    "label": "Mountain",
+    "color": "#7a7a8a",
+    "traversable": true,
+    "requires_boat": false,
+    "encounter_chance": 0.45,
+    "travel_cost": 1.0,
+    "events": [
+      { "type": "creature",   "title": "Dragon Wyrmling",   "desc": "A young dragon emerges from a cave mouth, breathing jets of flame." },
+      { "type": "creature",   "title": "Stone Golem",       "desc": "What seemed a rockface lurches forward — a massive golem, eyes glowing dull red." },
+      { "type": "creature",   "title": "Frost Giant",       "desc": "A frost giant crests the ridge, glacier-blue eyes scanning below." },
+      { "type": "item",       "title": "Dwarf Vault",       "desc": "A carved door is set into the mountainside, half-buried in scree. The lock is old." },
+      { "type": "item",       "title": "Frozen Explorer",   "desc": "A figure suspended in ice clutches a satchel. The bag is frozen but clearly full." },
+      { "type": "aberration", "title": "Voice in the Peak", "desc": "A voice booms from the summit in no known tongue. The mountain is asking something." },
+      { "type": "aberration", "title": "Crystal Visions",   "desc": "Quartz formations reflect scenes that haven't happened yet — or have, elsewhere." }
+    ]
+  },
+  {
+    "key": "desert",
+    "label": "Desert",
+    "color": "#c9a84c",
+    "traversable": true,
+    "requires_boat": false,
+    "encounter_chance": 0.35,
+    "travel_cost": 0.5,
+    "events": [
+      { "type": "creature",   "title": "Giant Scorpion",     "desc": "A scorpion the size of a cart crawls from beneath the sand, claws raised." },
+      { "type": "creature",   "title": "Sand Worm",          "desc": "The ground vibrates. Seconds before something enormous breaks the surface." },
+      { "type": "creature",   "title": "Desert Lich",        "desc": "A desiccated figure stands at the dune's crest. It speaks. The air grows cold." },
+      { "type": "item",       "title": "Sunken Temple",      "desc": "Wind has exposed the carved top of a buried structure. Stairs lead into darkness." },
+      { "type": "item",       "title": "Merchant's Bones",   "desc": "A collapsed merchant lies half-buried. The cargo is sealed and intact." },
+      { "type": "aberration", "title": "Mirage City",        "desc": "A gleaming city shimmers at the horizon and shows no sign of fading as you approach." },
+      { "type": "aberration", "title": "Solar Deity Vision", "desc": "A figure of living flame walks beside the party for seven steps at high noon, then vanishes." }
+    ]
+  },
+  {
+    "key": "swamp",
+    "label": "Swamp",
+    "color": "#4a6741",
+    "traversable": true,
+    "requires_boat": false,
+    "encounter_chance": 0.40,
+    "travel_cost": 0.5,
+    "events": [
+      { "type": "creature",   "title": "Bog Troll",        "desc": "Something enormous slides from the black water, reaching with long arms." },
+      { "type": "creature",   "title": "Swamp Witch",      "desc": "A figure watches from a stilted shack. She already knows your names." },
+      { "type": "creature",   "title": "Poison Serpents",  "desc": "The water comes alive with serpents, converging as if drawn by something stranger than hunger." },
+      { "type": "item",       "title": "Sunken Chest",     "desc": "A glint in the murk catches the eye. Heavy with silt, but the lock has snapped." },
+      { "type": "item",       "title": "Poacher's Cache",  "desc": "A waterproof bundle hangs from a submerged tree — traps, vials, and a hand-drawn map." },
+      { "type": "aberration", "title": "The Green Mist",   "desc": "A luminous mist settles around your knees. Shapes move inside it. Too many limbs." },
+      { "type": "aberration", "title": "Forgotten Shrine", "desc": "A carved face rises from the mire, weeping black water. Offerings were left recently." }
+    ]
+  }
+]
