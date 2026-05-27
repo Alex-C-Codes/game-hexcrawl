@@ -1,0 +1,47 @@
+{
+  "dungeon_id": "obsidian_caldera",
+  "name": "The Obsidian Caldera",
+  "theme_layout": "molten_cave",
+  "grid_dimensions": { "width": 40, "height": 40 },
+  "rooms": [
+    {
+      "room_number": 1,
+      "title": "The Smoldering Maw",
+      "description": "The air grows heavy and thick with sulfur. Heat radiates from the basalt walls as jagged obsidian stalactites hang precariously overhead. A faint red glow pulses from the tunnel ahead.",
+      "grid_placement": { "center_x": 20, "center_y": 5, "radius": 4 },
+      "creatures": [
+        { "template_id": "cultist_skirmisher", "quantity": 3, "starting_hp_override": null }
+      ],
+      "items": [
+        { "item_template_id": "ration", "quantity": 4 }
+      ]
+    },
+    {
+      "room_number": 2,
+      "title": "The Altar of Ash",
+      "description": "A massive cavern opens up. In the center sits a monolithic stone altar slick with fresh blood. Ash-cultists kneel in a semi-circle, their low chanting echoing off the cavernous ceiling.",
+      "grid_placement": { "center_x": 20, "center_y": 18, "radius": 6 },
+      "creatures": [
+        { "template_id": "ash_shaman", "quantity": 1, "starting_hp_override": 45 },
+        { "template_id": "magma_hound", "quantity": 2, "starting_hp_override": null }
+      ],
+      "items": [
+        { "item_template_id": "gold", "quantity": 350 },
+        { "item_template_id": "potion_healing", "quantity": 2 }
+      ]
+    },
+    {
+      "room_number": 3,
+      "title": "Ignis's Lava Throne",
+      "description": "You breach the final archway and step onto a narrow stone bridge spanning a churning sea of molten magma. Resting on a massive rock pillar in the center of the lake is Ignis, the Red Tyrant. Her golden eyes lock onto you as she unfurls her wings.",
+      "grid_placement": { "center_x": 20, "center_y": 32, "radius": 8 },
+      "creatures": [
+        { "template_id": "red_dragon_boss", "quantity": 1, "starting_hp_override": 150 }
+      ],
+      "items": [
+        { "item_template_id": "gold", "quantity": 5000 },
+        { "item_template_id": "fire_shield", "quantity": 1 }
+      ]
+    }
+  ]
+}
