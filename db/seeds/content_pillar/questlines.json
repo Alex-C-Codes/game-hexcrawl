@@ -9,18 +9,24 @@
         "id": "interrogate_scouts",
         "parent_quest_id": null,
         "required_rumor_id": "orc_scout_rumor",
+        "min_level": 1,
+        "max_level": 3,
         "title": "Part 1: Intercept the Scouts"
       },
       {
         "id": "reclaim_the_mine",
         "parent_quest_id": "interrogate_scouts",
         "required_rumor_id": "iron_mine_rumor",
+        "min_level": 1,
+        "max_level": 3,
         "title": "Part 2: Cut Off the Iron"
       },
       {
         "id": "chieftain_fortress_rumor",
         "parent_quest_id": "reclaim_the_mine",
         "required_rumor_id": "",
+        "min_level": 1,
+        "max_level": 3,
         "title": "Part 3: Confront the Chieftan"
       }
     ]
@@ -34,6 +40,8 @@
         "id": "investigate_graveyard",
         "parent_quest_id": null,
         "required_rumor_id": "vampire_bat_rumor",
+        "min_level": 1,
+        "max_level": 3,
         "title": "Part 1: Shadows over the Grave"
       }
     ]
@@ -50,6 +58,8 @@
         "id": "gather_dragon_lore",
         "parent_quest_id": null,
         "required_rumor_id": "scholar_dragon_rumor",
+        "min_level": 1,
+        "max_level": 3,
         "title": "Chapter 1: The Gathering Threat",
         "description": "Speak with the Grand Scholar to uncover the regional domains of the five dragons.",
         "objectives": { "type": "TALK_TO_NPC", "target_id": "grand_scholar" },
@@ -59,6 +69,8 @@
         "id": "the_final_reckoning",
         "parent_quest_id": "gather_dragon_lore",
         "required_rumor_id": null,
+        "min_level": 1,
+        "max_level": 3,
         "title": "Chapter 2: The Final Reckoning",
         "description": "All five dragons have fallen. Return to the High King to claim your ultimate reward.",
     
@@ -81,6 +93,8 @@
         "id": "red_dragon_scout",
         "parent_quest_id": null,
         "required_rumor_id": "red_dragon_sightings_rumor",
+        "min_level": 1,
+        "max_level": 3,
         "title": "Ignis Part 1: Ash and Smoke",
         "description": "Investigate the volcanic hex where cultists are sacrificing livestock to Ignis.",
         "objectives": { "type": "CLEAR_DUNGEON", "target_template_id": "dragon_cultist", "target_quantity": 8 },
@@ -90,6 +104,8 @@
         "id": "slay_red_dragon",
         "parent_quest_id": "red_dragon_scout",
         "required_rumor_id": "red_dragon_lair_rumor",
+        "min_level": 1,
+        "max_level": 3,
         "title": "Ignis Part 2: Slay the Beast",
         "description": "Plunge into the volcanic caldera and destroy Ignis.",
         "objectives": { "type": "KILL", "target_template_id": "red_dragon_boss", "target_quantity": 1 },
@@ -108,6 +124,8 @@
       {
         "id": "slay_blue_dragon",
         "parent_quest_id": null,
+        "min_level": 1,
+        "max_level": 3,
         "required_rumor_id": "blue_dragon_lair_rumor",
         "title": "Fulgur: Strike the Storm",
         "description": "Scales the lightning ridges and destroy Fulgur.",
