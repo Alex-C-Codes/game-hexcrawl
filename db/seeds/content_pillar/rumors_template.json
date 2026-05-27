@@ -1,30 +1,60 @@
 [
-  {
-    "id": "lost_tomb_rumor",
-    "category": "dungeon",
-    "base_discovery_chance": 0.40,
-    "text_template": "An old miner slams his mug down and whispers about a crumbling stone entrance he found hidden deep within the local {biome}. He swears he heard chanting coming from inside.",
-    "reward_hints": ["ancient_relics", "gold"]
-  },
-  {
-    "id": "bandit_ambush_rumor",
-    "category": "hazard",
-    "base_discovery_chance": 0.50,
-    "text_template": "A panicked merchant warns you that a mercenary group has established a toll checkpoint on the road just a few travel units {direction} of here. They are shaking down anyone without a faction passport.",
-    "reward_hints": ["stolen_supplies", "bounty_gold"]
-  },
-  {
-    "id": "monster_den_rumor",
-    "category": "creature",
-    "base_discovery_chance": 0.30,
-    "text_template": "A local hunter warns that livestock have been disappearing from the outskirts. She tracked massive, clawed footprints heading straight toward a dark cave system in the nearby {biome}.",
-    "reward_hints": ["rare_monster_hides", "trophy"]
-  },
-  {
-    "id": "fabled_weapon_rumor",
-    "category": "legendary_item",
-    "base_discovery_chance": 0.15,
-    "text_template": "A traveling scholar shares a passage from an ancient text. It claims a weapon of immense power was lost centuries ago in a ruin located directly {direction} of this settlement.",
-    "reward_hints": ["magic_weapon"]
-  }
+  "mainquest_rumors": [
+    {
+      "id": "lost_tomb_rumor",
+      "theme": "undead",
+      "category": "dungeon",
+      "questline": "rise_of_the_blood_moon_queen",
+      "base_discovery_chance": 0.40,
+      "allowed_settlment_ids": ["hearth"],
+      "text_template": "An old miner slams his mug down and whispers about a crumbling stone entrance he found hidden deep within the local {biome}. He swears he heard chanting coming from inside.",
+      "reward_hints": ["ancient_relics", "gold"]
+    },
+    {
+      "id": "bandit_ambush_rumor",
+      "category": "hazard",
+      "base_discovery_chance": 0.50,
+      "text_template": "A panicked merchant warns you that a mercenary group has established a toll checkpoint on the road just a few travel units {direction} of here. They are shaking down anyone without a faction passport.",
+      "reward_hints": ["stolen_supplies", "bounty_gold"]
+    },
+    {
+      "id": "monster_den_rumor",
+      "category": "creature",
+      "base_discovery_chance": 0.30,
+      "text_template": "A local hunter warns that livestock have been disappearing from the outskirts. She tracked massive, clawed footprints heading straight toward a dark cave system in the nearby {biome}.",
+      "reward_hints": ["rare_monster_hides", "trophy"]
+    },
+    {
+      "id": "fabled_weapon_rumor",
+      "category": "legendary_item",
+      "base_discovery_chance": 0.15,
+      "text_template": "A traveling scholar shares a passage from an ancient text. It claims a weapon of immense power was lost centuries ago in a ruin located directly {direction} of this settlement.",
+      "reward_hints": ["magic_weapon"]
+    }
+  ],
+  "wrath_of_nahk_rumors": [
+    {
+      "id": "orc_scout_rumor",
+      "category": "creature",
+      "base_discovery_chance": 0.50,
+      "text_template": "A frightened farmer slams his mug down. He swears he saw a small war-band of orc scouts setting up a camp in the {biome} just outside of town.",
+      "reward_hints": ["scout_intel"]
+    },
+    {
+      "id": "iron_mine_rumor",
+      "category": "dungeon",
+      "base_discovery_chance": 0.35,
+      "text_template": "The local blacksmith sighs heavily. Supply lines are completely cut off because orcs have seized the deep iron mines in the nearby {biome}.",
+      "reward_hints": ["ancient_relics", "heavy_iron"]
+    },
+    {
+      "id": "chieftain_fortress_rumor",
+      "category": "boss_dungeon",
+      "base_discovery_chance": 0.15,
+      "text_template": "A high-ranking scout drags himself into the tavern, bleeding. He gasps that Chieftain Malkor has built a massive, heavily fortified stone stronghold {direction} of here.",
+      "reward_hints": ["legendary_loot", "faction_treasury"]
+    }
+  ],
+  "random_rumors": [
+  ]
 ]
