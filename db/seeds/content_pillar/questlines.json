@@ -67,25 +67,16 @@
         "objectives": { "type": "TALK_TO_NPC", "target_id": "grand_scholar" },
         "rewards": { "gold": 100 }
       },
-  {
-    "questline_id": "dragon_scourge_overlord",
-    "theme": "dragon_scourge",
-    "title": "The Age of Primal Dragons",
-    "description": "Five ancient dragons have broken their seals across the realm. Hunt them down to unlock the path to the true progenitor of ruin.",
-    "is_main_story": true,
-    "required_completed_questlines": [],
-    "required_completed_quest_nodes": [],
-    "nodes": [
-      {
-        "id": "gather_dragon_lore",
-        "parent_quest_id": null,
-        "required_rumor_id": "scholar_dragon_rumor",
-        "min_level": 3,
-        "max_level": 4,
+       {
+        "id": "dragon_bane_sword",
+        "parent_quest_id": "gather_dragon_lore",
+        "required_rumor_id": "",
+        "min_level": 1,
+        "max_level": 3,
         "title": "Chapter 1: The Gathering Threat",
-        "description": "Consult the Grand Archivist to pinpoint the environmental domains of the five rogue dragons.",
-        "objectives": { "type": "TALK_TO_NPC", "target_id": "grand_archivist" },
-        "rewards": { "gold": 200 }
+        "description": "Speak with the Grand Scholar to uncover the regional domains of the five dragons.",
+        "objectives": { "type": "TALK_TO_NPC", "target_id": "grand_scholar" },
+        "rewards": { "gold": 100 }
       },
       {
         "id": "the_dragon_prince_awakening",
@@ -244,6 +235,45 @@
         "description": "Scales the lightning ridges and destroy Fulgur.",
         "objectives": { "type": "KILL", "target_template_id": "blue_dragon_boss", "target_quantity": 1 },
         "rewards": { "gold": 3000 }
+      }
+    ]
+  },
+  {
+    "questline_id": "the_lost_dragonslayer_vault",
+    "theme": "dragon_scourge",
+    "title": "The Vault of the Dragon-Slayer",
+    "description": "An ancient vault containing weapons of the old dragon hunters has been unearthed. Delve inside to claim its legendary power.",
+    "is_main_story": false,
+    "trigger_conditions": {
+      "type": "COMPLETED_QUEST_NODES_COUNT",
+      "target_pool": [
+        "slay_red_dragon", 
+        "slay_blue_dragon", 
+        "slay_green_dragon", 
+        "slay_black_dragon", 
+        "slay_white_dragon"
+      ],
+      "required_count": 3
+    },
+    "nodes": [
+      {
+        "id": "uncover_the_vault",
+        "parent_quest_id": null,
+        "required_rumor_id": "dragonslayer_vault_rumor",
+        "min_level": 7,
+        "max_level": 9,
+        "title": "One-Shot: The Whispering Seals",
+        "description": "A rumor has spread of a secret entrance opening in the rocky ridges. Breach the vault doors, defeat the ancient stone guardians, and claim the Wyrm-Scourge Blade.",
+        "objectives": {
+          "type": "CLEAR_DUNGEON",
+          "target_template_id": "vault_guardian",
+          "target_quantity": 1
+        },
+        "rewards": {
+          "gold": 2000,
+          "item_template_id": "wyrm_scourge_blade",
+          "item_quantity": 1
+        }
       }
     ]
   }
