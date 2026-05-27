@@ -3,13 +3,13 @@
     {
       "id": 1,
       "name": "Hearth",
-      "description": "The last safe village before the wilderness begins. Smoke rises from its chimneys day and night. Most roads eventually lead back here.",
+      "description": "A quaint and cozy village. Smoke rises from its chimneys day and night. The villagers are known for their warmth and hospitality, always ready to welcome travelers with open arms and a hearty meal.",
       "tier_level": 2,
       "starting_population": 200,
       "layout_style": "timber",
       "guaranteed_buildings": ["tavern", "general_store", "healer", "stables"],
       "unique_tags": ["starting_hub", "safe_haven"],
-      "faction": "The Hearthfolk",
+      "faction": {"$ref": "factions.hearthfolk"},
       "faction_description": "A tight-knit community of farmers, hunters, and craftsmen who value tradition, hospitality, and self-reliance. They are wary of outsiders but will welcome those who prove themselves trustworthy and respectful of their way of life. The Hearthfolk are skilled in agriculture, animal husbandry, and basic survival skills, making them an essential resource for adventurers venturing into the wilderness. They have a strong connection to the land and are known for their hearty meals, warm hearths, and lively festivals that celebrate the changing seasons."
     },
     {
@@ -21,7 +21,7 @@
       "layout_style": "timber",
       "guaranteed_buildings": ["tavern", "general_store", "healer", "stables"],
       "unique_tags": ["starting_hub", "safe_haven"],
-      "faction": "The Arlandrians",
+      "faction": {"$ref": "factions.arlandrians"},
       "faction_description": "A diverse community of merchants, artisans, and travelers who value commerce, innovation, and cultural exchange. They are known for their hospitality and their ability to adapt to changing circumstances. The Arlandrians are skilled in trade, negotiation, and the arts of diplomacy, making them valuable allies for adventurers seeking to navigate the complex political landscape of the region. They have a strong connection to the land and are known for their vibrant markets, lively festivals, and welcoming atmosphere."
     },
     {
@@ -32,7 +32,9 @@
       "starting_population": 1200,
       "layout_style": "timber_and_stone",
       "guaranteed_buildings": ["blacksmith", "tavern", "marketplace_stalls", "town_hall"],
-      "unique_tags": ["high_fertility", "trade_hub"]
+      "unique_tags": ["high_fertility", "trade_hub"],
+      "faction": {"$ref": "factions.oakhaven"},
+      "faction_description": "A diverse community of merchants, artisans, and travelers who value commerce, innovation, and cultural exchange. They are known for their hospitality and their ability to adapt to changing circumstances. The Oakhaven folk are skilled in trade, negotiation, and the arts of diplomacy, making them valuable allies for adventurers seeking to navigate the complex political landscape of the region. They have a strong connection to the land and are known for their vibrant markets, lively festivals, and welcoming atmosphere."
     },
     {
       "id": 4,
@@ -42,7 +44,9 @@
       "starting_population": 450,
       "layout_style": "dwarven_stone",
       "guaranteed_buildings": ["smelter", "armory", "deep_mine_shaft"],
-      "unique_tags": ["rich_iron_vein", "fortified"]
+      "unique_tags": ["rich_iron_vein", "fortified"],
+      "faction": {"$ref": "factions.grip_of_the_mountain"},
+      "faction_description": "A hardy community of miners and craftsmen who have carved out a life in the harsh mountain environment. They are known for their resilience, strength, and skill in working with stone and metal. The Grip of the Mountain folk are skilled in mining, blacksmithing, and the arts of survival in extreme conditions. They have a strong connection to the land and are known for their sturdy buildings, fierce loyalty to their community, and their ability to thrive in even the most challenging circumstances."
     }
   ],
   "procedural_blueprints": {
