@@ -4,6 +4,7 @@
     "theme": "orc_uprising",
     "title": "The Blood Axe Uprising",
     "description": "The Great Warlord Nahk is uniting the frenzied orc tribes and goblinoid clans across through realm with brute strength and cunning. He seeks the Dragon Pearl - believing himeslf to be the Great Chosen One (a prophecy uttered by their shamans) destined to rule all of Arland.",
+    "is_main_story": true,
     "nodes": [
       {
         "id": "interrogate_scouts",
@@ -35,6 +36,7 @@
     "questline_id": "vampire_lord_awakening",
     "theme": "undead_scourge",
     "title": "The Crimson Eclipse",
+    "is_main_story": true,
     "nodes": [
       {
         "id": "investigate_graveyard",
@@ -65,16 +67,58 @@
         "objectives": { "type": "TALK_TO_NPC", "target_id": "grand_scholar" },
         "rewards": { "gold": 100 }
       },
+  {
+    "questline_id": "dragon_scourge_overlord",
+    "theme": "dragon_scourge",
+    "title": "The Age of Primal Dragons",
+    "description": "Five ancient dragons have broken their seals across the realm. Hunt them down to unlock the path to the true progenitor of ruin.",
+    "is_main_story": true,
+    "required_completed_questlines": [],
+    "required_completed_quest_nodes": [],
+    "nodes": [
       {
-        "id": "the_final_reckoning",
+        "id": "gather_dragon_lore",
+        "parent_quest_id": null,
+        "required_rumor_id": "scholar_dragon_rumor",
+        "min_level": 3,
+        "max_level": 4,
+        "title": "Chapter 1: The Gathering Threat",
+        "description": "Consult the Grand Archivist to pinpoint the environmental domains of the five rogue dragons.",
+        "objectives": { "type": "TALK_TO_NPC", "target_id": "grand_archivist" },
+        "rewards": { "gold": 200 }
+      },
+      {
+        "id": "the_dragon_prince_awakening",
         "parent_quest_id": "gather_dragon_lore",
+        "required_rumor_id": "overlord_abyss_rumor",
+        "min_level": 11,
+        "max_level": 12,
+        "title": "Chapter 2: The End of Days",
+        "description": "With the five elements broken, their life essences have breached the final seal. Venture into the Void Rift and destroy Nilab, the Prince of Dragons.",
+        
+        "required_completed_questlines": [
+          "red_dragon_arc", 
+          "blue_dragon_arc", 
+          "green_dragon_arc", 
+          "black_dragon_arc", 
+          "white_dragon_arc"
+        ],
+        
+        "objectives": { "type": "KILL", "target_template_id": "tiamat_overlord_boss", "target_quantity": 1 },
+        "rewards": { "gold": 50000, "item_template_id": "infinity_core_shield" }
+      }
+    ]
+  },
+      {
+        "id": "the_fate_of_the_kingdom",
+        "parent_quest_id": "the_final_reckoning",
         "required_rumor_id": null,
-        "min_level": 1,
-        "max_level": 3,
-        "title": "Chapter 2: The Final Reckoning",
-        "description": "All five dragons have fallen. Return to the High King to claim your ultimate reward.",
+        "min_level": 11,
+        "max_level": 12,
+        "title": "Chapter 3: The Fate of the Kingdom",
+        "description": "All five dragons have fallen. Speak with the High King to claim your ultimate reward.",
     
-        "required_completed_questlines": ["red_dragon_arc", "blue_dragon_arc", "green_dragon_arc"],    
+        "required_completed_questlines": ["the_final_reckoning"],    
         "objectives": { "type": "TALK_TO_NPC", "target_id": "high_king" },
         "rewards": { "gold": 10000, "item_template_id": "dragon_slayer_blade" }
       }
@@ -113,6 +157,75 @@
       }
     ]
   },
+  {
+    "questline_id": "green_dragon_arc",
+    "theme": "dragon_scourge",
+    "title": "The Poison of Hemlock",
+    "description": "Slay Hemlock, the Verdant Scourge corrupting the Whispering Wood.",
+    "is_main_story": false,
+    "required_completed_quest_lines": [],
+    "required_completed_quest_nodes": ["gather_dragon_lore"],
+    "nodes": [
+      {
+        "id": "green_dragon_blight",
+        "parent_quest_id": null,
+        "required_rumor_id": "green_dragon_blight_rumor",
+        "min_level": 4,
+        "max_level": 5,
+        "title": "Hemlock Part 1: The Choking Woods",
+        "description": "A toxic emerald fog is choking out the timber settlement. Investigate the overgrown grove to the north and eliminate the blighted treants spreading the poison.",
+        "objectives": {
+          "type": "CLEAR_DUNGEON",
+          "target_template_id": "blighted_treant",
+          "target_quantity": 6
+        },
+        "rewards": {
+          "gold": 600,
+          "faction_reputation_id": 1,
+          "reputation_change": 15
+        }
+      },
+      {
+        "id": "green_dragon_antidote",
+        "parent_quest_id": "green_dragon_blight",
+        "required_rumor_id": "hermit_antidote_rumor",
+        "min_level": 5,
+        "max_level": 6,
+        "title": "Hemlock Part 2: Extracting the Venom",
+        "description": "The blight is worsening. Track down the eccentric hermit deep in the swamp hex to craft a powerful anti-venom potion required to survive Viridios's lair.",
+        "objectives": {
+          "type": "LOOT_ITEM",
+          "target_template_id": "venom_sac",
+          "target_quantity": 3
+        },
+        "rewards": {
+          "gold": 1200,
+          "item_template_id": "potion_poison_resistance",
+          "item_quantity": 4
+        }
+      },
+      {
+        "id": "slay_green_dragon",
+        "parent_quest_id": "green_dragon_antidote",
+        "required_rumor_id": "green_dragon_lair_rumor",
+        "min_level": 6,
+        "max_level": 7,
+        "title": "Hemlock Part 3: Into the Heart of Decay",
+        "description": "With the anti-venom secured, breach the ancient, vine-choked temple ruins and destroy Viridios before the forest is permanently corrupted.",
+        "objectives": {
+          "type": "KILL",
+          "target_template_id": "green_dragon_boss",
+          "target_quantity": 1
+        },
+        "rewards": {
+          "gold": 4000,
+          "item_template_id": "verdant_longbow",
+          "item_quantity": 1,
+          "faction_reputation_id": 1,
+          "reputation_change": 40
+        }
+      }
+    },
   {
     "questline_id": "blue_dragon_arc",
     "theme": "dragon_scourge",
