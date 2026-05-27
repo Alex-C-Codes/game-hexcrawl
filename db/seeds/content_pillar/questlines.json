@@ -16,6 +16,27 @@
         "parent_quest_id": "interrogate_scouts",
         "required_rumor_id": "iron_mine_rumor",
         "title": "Part 2: Cut Off the Iron"
+      },
+      {
+        "id": "orc_scout_rumor",
+        "parent_quest_id": "",
+        "required_rumor_id": "",
+        "text_template": "A frightened farmer slams his mug down. He swears he saw a small war-band of orc scouts setting up a camp in the {biome} just outside of town.",
+        "reward_hints": ["scout_intel"]
+      },
+      {
+        "id": "iron_mine_rumor",
+        "parent_quest_id": "",
+        "required_rumor_id": "",
+        "text_template": "The local blacksmith sighs heavily. Supply lines are completely cut off because orcs have seized the deep iron mines in the nearby {biome}.",
+        "reward_hints": ["ancient_relics", "heavy_iron"]
+      },
+      {
+        "id": "chieftain_fortress_rumor",
+        "parent_quest_id": "",
+        "required_rumor_id": "",
+        "text_template": "A high-ranking scout drags himself into the tavern, bleeding. He gasps that Chieftain Malkor has built a massive, heavily fortified stone stronghold {direction} of here.",
+        "reward_hints": ["legendary_loot", "faction_treasury"]
       }
     ]
   },
