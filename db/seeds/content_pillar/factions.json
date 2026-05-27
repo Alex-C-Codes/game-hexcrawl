@@ -1,4 +1,26 @@
 {
+    "faction_types": [
+        {
+            "type_name": "Political & Governmental",
+            "type_description": "Ruling councils, royal dynasties, or military powers that enforce laws and control territory."
+        },
+        {
+            "type_name": "Religious",
+            "type_description": "Fanatical orders, established churches, or secret cults dedicated to specific deities or philosophies."
+        },
+        {
+            "type_name": "Criminal",
+            "type_description": "Syndicates, street gangs, smugglers, and assassins that operate in the shadows to control illicit markets."
+        },
+        {
+            "type_name": "Arcane",
+            "type_description": "Secret societies, magical colleges, or groups hoarding and researching forbidden knowledge."
+        },
+        {
+            "type_name": "Ideological",
+            "type_description": "Groups built on preserving nature, balancing the economy, or achieving an abstract world goal."
+        },
+    ],
     "factions": [
         {
             "id": 1,
