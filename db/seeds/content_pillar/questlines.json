@@ -1,0 +1,34 @@
+[
+  {
+    "questline_id": "blood_axe_uprising",
+    "theme": "orc_uprising",
+    "title": "The Blood Axe Uprising",
+    "nodes": [
+      {
+        "id": "interrogate_scouts",
+        "parent_quest_id": null,
+        "required_rumor_id": "orc_scout_rumor",
+        "title": "Part 1: Intercept the Scouts"
+      },
+      {
+        "id": "reclaim_the_mine",
+        "parent_quest_id": "interrogate_scouts",
+        "required_rumor_id": "iron_mine_rumor",
+        "title": "Part 2: Cut Off the Iron"
+      }
+    ]
+  },
+  {
+    "questline_id": "vampire_lord_awakening",
+    "theme": "undead_scourge",
+    "title": "The Crimson Eclipse",
+    "nodes": [
+      {
+        "id": "investigate_graveyard",
+        "parent_quest_id": null,
+        "required_rumor_id": "vampire_bat_rumor",
+        "title": "Part 1: Shadows over the Grave"
+      }
+    ]
+  }
+]
