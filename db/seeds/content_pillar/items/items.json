@@ -1,7 +1,7 @@
 [
   {
-    "name": "The Dragon Pearl"
-    "description": "Appears to be a large egg with dragon scales for a shell. The egg is multi-colored and has a small dragon wrapped around it."
+    "name": "The Dragon Pearl",
+    "description": "Appears to be a large egg with dragon scales for a shell. The egg is multi-colored and has a small dragon wrapped around it.",
     "requires_attunement": "yes",
     "rarity": "artifact",
     "properties": "Attuning to the egg, you feel immense power swell within. In the moment, you feel as though you could manipulate reality itself. A voice comes from within, asking 'What is it you wish?' The dragon-pearl allows the target who is attuned to it to cast the Wish spell at 9th level. Once the spell is cast, the egg cracks open. Bright light emenates outward, and then the egg crumbles into ash - never to be used again."

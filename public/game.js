@@ -298,6 +298,16 @@ function handleClick(screenX, screenY) {
   }
 }
 
+// ---- Mode select ----
+let selectedMode = null;
+document.querySelectorAll('.mode-card').forEach(card => {
+  card.addEventListener('click', () => {
+    selectedMode = card.dataset.mode;
+    document.getElementById('mode-select').style.display = 'none';
+    document.getElementById('lobby').style.display = 'flex';
+  });
+});
+
 // ---- Lobby ----
 let selectedClass = null;
 document.querySelectorAll('.class-card').forEach(card => {
@@ -316,7 +326,7 @@ function syncJoinBtn() {
 document.getElementById('join-btn').addEventListener('click', () => {
   const name = document.getElementById('player-name').value.trim();
   if (!name || !selectedClass) return;
-  socket.emit('player-join', { name, playerClass: selectedClass });
+  socket.emit('player-join', { name, playerClass: selectedClass, gameMode: selectedMode });
 });
 socket.on('lobby-error', (msg) => {
   document.getElementById('lobby-error').textContent = msg;

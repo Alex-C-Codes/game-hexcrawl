@@ -9,14 +9,17 @@ const server = http.createServer(app);
 const io     = new Server(server);
 const PORT   = 3000;
 
-app.use(express.static('public'));
+// ---- App routes ----
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('/',          (req, res) => res.sendFile(path.join(__dirname, 'public/pages/index.html')));
+app.get('/battlemap', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/battlemap.html')));
 
 // ---- Load data files ----
-const HEX_TYPES          = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/hex_types.json'),         'utf8'));
-const ROUTE_THEMES       = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/route_themes.json'),       'utf8'));
-const POI_NAMES          = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/poi_names.json'),          'utf8'));
-const WORLD_CONFIG       = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/world_config.json'),       'utf8'));
-const SETTLEMENT_CATALOG = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/settlement_catalog.json'), 'utf8'));
+const HEX_TYPES          = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/seeds/geography_pillar/hex_types.json'),        'utf8'));
+const ROUTE_THEMES       = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/seeds/geography_pillar/route_themes.json'),      'utf8'));
+const POI_NAMES          = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/seeds/active_play_pillar/poi_names.json'),       'utf8'));
+const WORLD_CONFIG       = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/world_config.json'),                             'utf8'));
+const SETTLEMENT_CATALOG = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/seeds/active_play_pillar/settlement_catalog.json'), 'utf8'));
 
 const { CALENDAR, makeStartingDate, getTimeOfDay, advanceTime } = require('./lib/time');
 const { BATTLE_PASSABLE, generateBattleMap } = require('./lib/battlemap');

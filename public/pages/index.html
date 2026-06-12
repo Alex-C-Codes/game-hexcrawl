@@ -44,10 +44,27 @@
   <div id="hex-tooltip"></div>
   <div id="settlement-card"></div>
 
-  <div id="lobby">
-    <div id="lobby-box">
+  <div id="mode-select">
+    <div id="mode-select-box">
       <h1>Hexcrawl</h1>
+      <p class="mode-subtitle">Choose your path</p>
+      <div id="mode-grid">
+        <div class="mode-card" data-mode="expedition">
+          <span class="mode-icon">🗺️</span>
+          <span class="mode-name">Expedition</span>
+          <span class="mode-desc">The world is forged around you. Explore procedurally generated lands, discover settlements, and face the unknown.</span>
+        </div>
+        <div class="mode-card" data-mode="creative">
+          <span class="mode-icon">✍️</span>
+          <span class="mode-name">Creative</span>
+          <span class="mode-desc">Shape the world as Dungeon Master. Place settlements, design hex maps, and craft your story.</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div id="lobby" style="display:none">
+    <div id="lobby-box">
       <p class="lobby-label">Your Name</p>
       <input type="text" id="player-name" maxlength="20"
              placeholder="Enter adventurer name..." autocomplete="off">
