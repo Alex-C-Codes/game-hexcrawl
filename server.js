@@ -10,9 +10,11 @@ const io     = new Server(server);
 const PORT   = 3000;
 
 // ---- App routes ----
-app.use(express.static(path.join(__dirname, 'public')));
-app.get('/',          (req, res) => res.sendFile(path.join(__dirname, 'public/pages/index.html')));
-app.get('/battlemap', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/battlemap.html')));
+// In dev, Vite serves the frontend on its own port. In production, serve the built client.
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'client/dist')));
+  app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'client/dist/index.html')));
+}
 
 // ---- Load data files ----
 const HEX_TYPES          = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/seeds/geography_pillar/hex_types.json'),        'utf8'));
