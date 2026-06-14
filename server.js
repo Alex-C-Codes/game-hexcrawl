@@ -13,6 +13,8 @@ const PORT   = 3000;
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/',          (req, res) => res.sendFile(path.join(__dirname, 'public/pages/index.html')));
 app.get('/battlemap', (req, res) => res.sendFile(path.join(__dirname, 'public/pages/battlemap.html')));
+app.get('/menu',      (req, res) => res.sendFile(path.join(__dirname, 'public/pages/menu.html')));
+app.get('/editor',    (req, res) => res.sendFile(path.join(__dirname, 'public/pages/editor.html')));
 
 // ---- Load data files ----
 const HEX_TYPES          = JSON.parse(fs.readFileSync(path.join(__dirname, 'db/seeds/geography_pillar/hex_types.json'),        'utf8'));
