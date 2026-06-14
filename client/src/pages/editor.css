@@ -1,0 +1,265 @@
+#editor-root {
+  position: fixed;
+  inset: 0;
+  background: #111;
+  color: #c9a84c;
+  font-family: Georgia, serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+/* ---- Header ---- */
+#editor-root #header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  height: 46px;
+  background: #0d0d0d;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+#editor-root #header h1 {
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c9a84c;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+#editor-root .sep { width: 1px; height: 22px; background: #252520; flex-shrink: 0; }
+
+#editor-root .hdr-label {
+  font-size: 0.66rem;
+  color: #4a4540;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#editor-root #input-name {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #e0d8c8;
+  font-family: Georgia, serif;
+  font-size: 0.88rem;
+  padding: 4px 10px;
+  width: 190px;
+  outline: none;
+}
+#editor-root #input-name:focus { border-color: #c9a84c; }
+
+#editor-root .size-input {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #e0d8c8;
+  font-family: Georgia, serif;
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  width: 50px;
+  outline: none;
+  text-align: center;
+}
+#editor-root .size-input:focus { border-color: #c9a84c; }
+
+#editor-root .hdr-x { color: #333; font-size: 0.8rem; }
+
+#editor-root .hdr-btn {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #a09060;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  padding: 5px 11px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+#editor-root .hdr-btn:hover { background: #242010; border-color: #c9a84c; color: #c9a84c; }
+#editor-root .hdr-btn.warn  { color: #8a4040; border-color: #3a2020; }
+#editor-root .hdr-btn.warn:hover { background: #1e1010; border-color: #9a4040; color: #c06060; }
+
+/* ---- Toolbar ---- */
+#editor-root #toolbar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 14px;
+  background: #0f0f0f;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+
+#editor-root .tool-btn {
+  background: #181510;
+  border: 1px solid #252520;
+  border-radius: 4px;
+  color: #6a6050;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  padding: 4px 12px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#editor-root .tool-btn .key {
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: #2e2c28;
+  border: 1px solid #222;
+  border-radius: 2px;
+  padding: 0 3px;
+  line-height: 1.4;
+}
+#editor-root .tool-btn:hover  { background: #222015; color: #c9a84c; }
+#editor-root .tool-btn.active { background: #1e1a0c; border-color: #c9a84c; color: #c9a84c; }
+#editor-root .tool-btn.active .key { color: #7a6030; border-color: #3a3020; }
+
+#editor-root .tbsep { width: 1px; height: 20px; background: #222; margin: 0 5px; }
+
+#editor-root .icon-btn {
+  background: #181510;
+  border: 1px solid #252520;
+  border-radius: 4px;
+  color: #6a6050;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+#editor-root .icon-btn:hover:not(:disabled) { background: #222015; color: #c9a84c; }
+#editor-root .icon-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+
+#editor-root #selected-info {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.76rem;
+  color: #4a4540;
+}
+#editor-root #selected-tile-swatch {
+  width: 16px; height: 16px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.55);
+  flex-shrink: 0;
+}
+#editor-root #selected-tile-name { color: #c9a84c; }
+
+/* ---- Main layout ---- */
+#editor-root #main { display: flex; flex: 1; overflow: hidden; }
+
+/* ---- Palette ---- */
+#editor-root #palette {
+  width: 155px;
+  background: #0d0d0d;
+  border-right: 1px solid #1a1a1a;
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding: 6px 5px;
+}
+#editor-root #palette::-webkit-scrollbar { width: 5px; }
+#editor-root #palette::-webkit-scrollbar-track { background: #0a0a0a; }
+#editor-root #palette::-webkit-scrollbar-thumb { background: #252525; border-radius: 3px; }
+
+#editor-root .palette-cat {
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #3a3830;
+  padding: 8px 4px 4px;
+  border-bottom: 1px solid #181818;
+  margin-bottom: 3px;
+}
+#editor-root .palette-cat:first-child { padding-top: 2px; }
+
+#editor-root .palette-tile {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 4px 5px;
+  cursor: pointer;
+  color: #6a6050;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  text-align: left;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  margin-bottom: 1px;
+}
+#editor-root .palette-tile:hover    { background: #181510; color: #c9a84c; }
+#editor-root .palette-tile.selected { background: #1e1a0c; border-color: #c9a84c; color: #c9a84c; }
+
+#editor-root .palette-swatch {
+  width: 18px; height: 18px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.55);
+}
+
+#editor-root .palette-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Canvas ---- */
+#editor-root #canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #080706;
+}
+
+#editor-root #editor-canvas {
+  display: block;
+  cursor: crosshair;
+  outline: none;
+}
+
+/* ---- Status bar ---- */
+#editor-root #statusbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px;
+  height: 26px;
+  background: #0d0d0d;
+  border-top: 1px solid #1a1a1a;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: #3a3830;
+}
+#editor-root #status-pos  { color: #5a5548; min-width: 60px; }
+#editor-root #status-tile { color: #6a5a38; min-width: 120px; }
+#editor-root #status-tool { color: #4a4840; }
+#editor-root #status-size { color: #3a3830; }
+#editor-root .sbsep { color: #1e1e1e; }
+#editor-root #status-hint { margin-left: auto; color: #252520; font-size: 0.66rem; }

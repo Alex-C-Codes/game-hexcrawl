@@ -463,4 +463,13 @@ function init() {
   document.getElementById('btn-fit').addEventListener('click', () => { fitView(); scheduleRender(); });
 }
 
-document.addEventListener('DOMContentLoaded', init);
+window.cleanupEditor = function () {
+  document.removeEventListener('keydown', onKeyDown);
+  window.removeEventListener('mouseup', onMouseUp);
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
