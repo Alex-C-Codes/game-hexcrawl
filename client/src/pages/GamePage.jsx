@@ -9,7 +9,7 @@ export default function GamePage() {
     document.head.appendChild(link);
 
     // Load scripts in order (each depends on the previous)
-    const srcs = ['/worldmap.js', '/battlemap.js', '/game.js'];
+    const srcs = ['/socket.io/socket.io.js', '/worldmap.js', '/battlemap.js', '/game.js'];
     const scripts = [];
     srcs.forEach((src, i) => {
       const s = document.createElement('script');

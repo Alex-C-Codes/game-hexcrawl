@@ -1,6 +1,9 @@
 #editor-root {
   position: fixed;
-  inset: 0;
+  top: 44px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: #111;
   color: #c9a84c;
   font-family: Georgia, serif;
@@ -84,8 +87,10 @@
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 #editor-root .hdr-btn:hover { background: #242010; border-color: #c9a84c; color: #c9a84c; }
-#editor-root .hdr-btn.warn  { color: #8a4040; border-color: #3a2020; }
+#editor-root .hdr-btn.warn    { color: #8a4040; border-color: #3a2020; }
 #editor-root .hdr-btn.warn:hover { background: #1e1010; border-color: #9a4040; color: #c06060; }
+#editor-root .hdr-btn.primary { color: #c9a84c; border-color: #c9a84c; background: #1e1a0c; }
+#editor-root .hdr-btn.primary:hover { background: #2a2210; }
 
 /* ---- Toolbar ---- */
 #editor-root #toolbar {

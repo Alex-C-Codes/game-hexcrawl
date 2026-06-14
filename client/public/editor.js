@@ -28,6 +28,7 @@ const TILE_CATS = ['Terrain', 'Structure', 'Feature', 'Markers'];
 let mapName = 'Untitled Dungeon';
 let mapW = 40, mapH = 30;
 let grid = [];
+let currentContentId = null;
 
 const view = { ox: 0, oy: 0, scale: 1.0 };
 let selectedTile = 'stone';
@@ -335,15 +336,39 @@ function selectTool(tool) {
 }
 
 // ---- Save / Load ----
+function mapData() {
+  return { name: mapName, width: mapW, height: mapH, grid: grid.slice(), buildings: [], entryX: 0, entryY: 0, tierTitle: 'Dungeon' };
+}
+
+function saveToLibrary() {
+  try {
+    if (!currentContentId) currentContentId = crypto.randomUUID();
+    const all = JSON.parse(localStorage.getItem('hx_content') || '[]');
+    const now = new Date().toISOString();
+    const idx = all.findIndex(i => i.id === currentContentId);
+    const record = { id: currentContentId, type: 'battlemap', name: mapName, data: mapData(), createdAt: all[idx]?.createdAt ?? now, updatedAt: now };
+    if (idx >= 0) all[idx] = record; else all.unshift(record);
+    localStorage.setItem('hx_content', JSON.stringify(all));
+    showToast('Saved to library');
+  } catch (e) { alert('Save failed: ' + e.message); }
+}
+
 function exportMap() {
-  const data = { name: mapName, width: mapW, height: mapH, grid: grid.slice(), buildings: [], entryX: 0, entryY: 0, tierTitle: 'Dungeon' };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(mapData(), null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = (mapName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'dungeon') + '.json';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function showToast(msg) {
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;bottom:40px;right:20px;background:#1e1a0c;border:1px solid #c9a84c;color:#c9a84c;font-family:Georgia,serif;font-size:0.78rem;padding:8px 16px;border-radius:4px;z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.4s';
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 1600);
 }
 
 function importMap(file) {
@@ -418,7 +443,25 @@ function init() {
   }
   new ResizeObserver(resizeCanvas).observe(wrap);
 
-  newGrid(40, 30);
+  // Load existing content if an ID was passed in from React
+  const incomingId = window.__editorContentId || null;
+  if (incomingId) {
+    try {
+      const all = JSON.parse(localStorage.getItem('hx_content') || '[]');
+      const item = all.find(i => i.id === incomingId);
+      if (item?.data) {
+        currentContentId = incomingId;
+        mapName = item.name || 'Untitled Dungeon';
+        mapW = item.data.width;
+        mapH = item.data.height;
+        grid = item.data.grid.map(t => TILES[t] ? t : 'stone');
+        document.getElementById('input-name').value = mapName;
+        syncSizeInputs();
+      }
+    } catch (e) { /* start fresh if load fails */ }
+  }
+  if (!grid.length) newGrid(40, 30);
+
   buildPalette();
   selectTile('stone');
   selectTool('rect');
@@ -455,7 +498,8 @@ function init() {
     fitView(); scheduleRender();
   });
 
-  document.getElementById('btn-save').addEventListener('click', exportMap);
+  document.getElementById('btn-save').addEventListener('click', saveToLibrary);
+  document.getElementById('btn-export').addEventListener('click', exportMap);
 
   const fileInput = document.getElementById('file-input');
   document.getElementById('btn-load').addEventListener('click', () => fileInput.click());

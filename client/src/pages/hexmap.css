@@ -1,0 +1,343 @@
+/* Hex Map Editor — scoped to #hexmap-root */
+#hexmap-root {
+  position: fixed;
+  top: 44px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: #0d0d0d;
+  font-family: Georgia, serif;
+  color: #e0d8c8;
+  overflow: hidden;
+}
+
+/* Header */
+#hexmap-root #hx-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 44px;
+  background: #0a0a0a;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+#hexmap-root h1 {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: #c9a84c;
+  letter-spacing: 0.12em;
+  margin: 0;
+  white-space: nowrap;
+}
+#hexmap-root .hx-sep {
+  width: 1px;
+  height: 22px;
+  background: #1e1e1e;
+  flex-shrink: 0;
+}
+#hexmap-root .hx-label {
+  font-size: 0.65rem;
+  color: #4a4540;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+#hexmap-root #hx-input-name {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #e0d8c8;
+  font-family: Georgia, serif;
+  font-size: 0.85rem;
+  padding: 3px 8px;
+  outline: none;
+  width: 180px;
+}
+#hexmap-root .hx-btn {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #a09060;
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+#hexmap-root .hx-btn:hover { border-color: #5a5040; color: #c9a84c; }
+#hexmap-root .hx-btn.primary {
+  color: #c9a84c;
+  border-color: #c9a84c;
+  background: #1e1a0c;
+}
+#hexmap-root .hx-btn.primary:hover { background: #2a2010; }
+
+/* Toolbar */
+#hexmap-root #hx-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: #0e0e0e;
+  border-bottom: 1px solid #181818;
+  flex-shrink: 0;
+}
+#hexmap-root .hx-tool-btn {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 4px;
+  color: #7a7060;
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#hexmap-root .hx-tool-btn:hover { border-color: #5a5040; color: #c9a84c; }
+#hexmap-root .hx-tool-btn.active {
+  background: #1e1a0c;
+  border-color: #c9a84c;
+  color: #c9a84c;
+}
+#hexmap-root .hx-key {
+  display: inline-block;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+  font-size: 0.6rem;
+  padding: 0 3px;
+  margin-left: 3px;
+  color: #4a4540;
+}
+#hexmap-root .hx-tbsep {
+  width: 1px;
+  height: 20px;
+  background: #1e1e1e;
+  flex-shrink: 0;
+  margin: 0 3px;
+}
+#hexmap-root #hx-selected-info {
+  font-size: 0.72rem;
+  color: #4a4540;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+}
+#hexmap-root #hx-selected-tile-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid #2a2520;
+}
+
+/* Main body */
+#hexmap-root #hx-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+#hexmap-root #hx-sidebar {
+  width: 152px;
+  flex-shrink: 0;
+  background: #0a0a0a;
+  border-right: 1px solid #141414;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Sidebar tabs */
+#hexmap-root #hx-sidebar-tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid #141414;
+}
+#hexmap-root .hx-stab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-right: 1px solid #141414;
+  color: #3a3530;
+  font-family: Georgia, serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 0;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+#hexmap-root .hx-stab:last-child { border-right: none; }
+#hexmap-root .hx-stab:hover { color: #7a7060; }
+#hexmap-root .hx-stab.active { color: #c9a84c; background: #0e0e0a; }
+
+/* Palette (biomes tab) */
+#hexmap-root #hx-palette {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#hexmap-root .hx-pal-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: #7a7060;
+  border: 1px solid transparent;
+}
+#hexmap-root .hx-pal-item:hover { background: #161410; color: #c9a84c; }
+#hexmap-root .hx-pal-item.selected {
+  background: #1e1a0c;
+  border-color: #c9a84c;
+  color: #c9a84c;
+}
+#hexmap-root .hx-pal-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.3);
+}
+
+/* Generate panel */
+#hexmap-root #hx-gen-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#hexmap-root .hx-gen-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #3a3530;
+  margin-bottom: 5px;
+}
+#hexmap-root .hx-gen-input {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #e0d8c8;
+  font-family: Georgia, serif;
+  font-size: 0.8rem;
+  padding: 4px 7px;
+  outline: none;
+  width: 100%;
+}
+#hexmap-root .hx-gen-slider {
+  width: 100%;
+  accent-color: #c9a84c;
+}
+#hexmap-root .hx-gen-biome-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+#hexmap-root .hx-gen-biome-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+#hexmap-root .hx-gen-biome-name {
+  font-size: 0.66rem;
+  color: #6a6050;
+  flex: 1;
+}
+#hexmap-root .hx-gen-biome-val {
+  font-size: 0.6rem;
+  color: #3a3530;
+  width: 18px;
+  text-align: right;
+}
+#hexmap-root .hx-gen-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+#hexmap-root .hx-gen-btn {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #a09060;
+  font-family: Georgia, serif;
+  font-size: 0.7rem;
+  padding: 6px 0;
+  cursor: pointer;
+  width: 100%;
+  letter-spacing: 0.05em;
+}
+#hexmap-root .hx-gen-btn:hover { border-color: #5a5040; color: #c9a84c; }
+#hexmap-root .hx-gen-btn.primary {
+  background: #1e1a0c;
+  border-color: #c9a84c;
+  color: #c9a84c;
+}
+#hexmap-root .hx-gen-btn.primary:hover { background: #2a2010; }
+
+/* Canvas wrap */
+#hexmap-root #hx-canvas-wrap {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: #080706;
+}
+#hexmap-root #hx-canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+/* Status bar */
+#hexmap-root #hx-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 12px;
+  background: #0a0a0a;
+  border-top: 1px solid #141414;
+  font-size: 0.65rem;
+  color: #3a3830;
+  flex-shrink: 0;
+  height: 26px;
+}
+#hexmap-root #hx-statusbar .sbsep { color: #1e1e1e; }
+#hexmap-root #hx-status-hint { margin-left: auto; }
+
+/* Toast */
+#hexmap-root #hx-toast {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e1a0c;
+  border: 1px solid #c9a84c;
+  border-radius: 6px;
+  color: #c9a84c;
+  font-size: 0.8rem;
+  padding: 8px 18px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 500;
+  white-space: nowrap;
+}
+#hexmap-root #hx-toast.show { opacity: 1; }
