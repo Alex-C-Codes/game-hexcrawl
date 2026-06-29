@@ -1,0 +1,258 @@
+#v3d-root {
+  position: fixed;
+  top: 44px;
+  left: 0; right: 0; bottom: 0;
+  background: #111;
+  color: #c9a84c;
+  font-family: Georgia, serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+/* ---- Header ---- */
+#v3d-root #v3d-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  height: 46px;
+  background: #0d0d0d;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+#v3d-root #v3d-header h1 {
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #c9a84c;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+#v3d-root .v3d-sep { width: 1px; height: 22px; background: #252520; flex-shrink: 0; }
+
+#v3d-root .v3d-label {
+  font-size: 0.66rem;
+  color: #4a4540;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+#v3d-root #v3d-header input[type="text"] {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #e0d8c8;
+  font-family: Georgia, serif;
+  font-size: 0.88rem;
+  padding: 4px 10px;
+  width: 190px;
+  outline: none;
+}
+#v3d-root #v3d-header input[type="text"]:focus { border-color: #c9a84c; }
+
+#v3d-root .v3d-btn {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #a09060;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  padding: 5px 11px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+#v3d-root .v3d-btn:hover    { background: #242010; border-color: #c9a84c; color: #c9a84c; }
+#v3d-root .v3d-btn.warn     { color: #8a4040; border-color: #3a2020; }
+#v3d-root .v3d-btn.warn:hover { background: #1e1010; border-color: #9a4040; color: #c06060; }
+#v3d-root .v3d-btn.primary  { color: #c9a84c; border-color: #c9a84c; background: #1e1a0c; }
+#v3d-root .v3d-btn.primary:hover { background: #2a2210; }
+
+/* ---- Toolbar ---- */
+#v3d-root #v3d-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 14px;
+  background: #0f0f0f;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+
+#v3d-root .v3d-tool {
+  background: #181510;
+  border: 1px solid #252520;
+  border-radius: 4px;
+  color: #6a6050;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  padding: 4px 12px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#v3d-root .v3d-tool:hover  { background: #222015; color: #c9a84c; }
+#v3d-root .v3d-tool.active { background: #1e1a0c; border-color: #c9a84c; color: #c9a84c; }
+
+#v3d-root .v3d-key {
+  font-family: monospace;
+  font-size: 0.6rem;
+  color: #2e2c28;
+  border: 1px solid #222;
+  border-radius: 2px;
+  padding: 0 3px;
+  line-height: 1.4;
+}
+#v3d-root .v3d-tool.active .v3d-key { color: #7a6030; border-color: #3a3020; }
+
+#v3d-root .v3d-tbsep { width: 1px; height: 20px; background: #222; margin: 0 5px; }
+
+#v3d-root .v3d-icon-btn {
+  background: #181510;
+  border: 1px solid #252520;
+  border-radius: 4px;
+  color: #6a6050;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+#v3d-root .v3d-icon-btn:hover:not(:disabled) { background: #222015; color: #c9a84c; }
+#v3d-root .v3d-icon-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+
+#v3d-root .v3d-ylevel {
+  background: #141210;
+  border: 1px solid #222018;
+  border-radius: 3px;
+  color: #4a4840;
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  padding: 3px 7px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
+  min-width: 36px;
+  text-align: center;
+}
+
+#v3d-root .v3d-scale-note {
+  font-size: 0.62rem;
+  color: #2a2820;
+  letter-spacing: 0.06em;
+  padding-left: 4px;
+  white-space: nowrap;
+}
+#v3d-root .v3d-ylevel:hover { border-color: #4a4038; color: #c9a84c; }
+#v3d-root .v3d-ylevel.active { background: #1e1a0c; border-color: #c9a84c; color: #c9a84c; }
+
+#v3d-root .v3d-selected-block {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: #c9a84c;
+  margin-left: 4px;
+}
+
+#v3d-root .v3d-selected-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+
+#v3d-root #v3d-hint {
+  margin-left: auto;
+  font-size: 0.66rem;
+  color: #252520;
+  white-space: nowrap;
+}
+
+/* ---- Main layout ---- */
+#v3d-root #v3d-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ---- Palette ---- */
+#v3d-root #v3d-palette {
+  width: 155px;
+  background: #0d0d0d;
+  border-right: 1px solid #1a1a1a;
+  overflow-y: auto;
+  flex-shrink: 0;
+  padding: 6px 5px;
+}
+#v3d-root #v3d-palette::-webkit-scrollbar { width: 5px; }
+#v3d-root #v3d-palette::-webkit-scrollbar-track { background: #0a0a0a; }
+#v3d-root #v3d-palette::-webkit-scrollbar-thumb { background: #252525; border-radius: 3px; }
+
+#v3d-root .v3d-cat {
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #3a3830;
+  padding: 8px 4px 4px;
+  border-bottom: 1px solid #181818;
+  margin-bottom: 3px;
+}
+#v3d-root .v3d-cat:first-child { padding-top: 2px; }
+
+#v3d-root .v3d-tile {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 4px 5px;
+  cursor: pointer;
+  color: #6a6050;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  text-align: left;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  margin-bottom: 1px;
+}
+#v3d-root .v3d-tile:hover    { background: #181510; color: #c9a84c; }
+#v3d-root .v3d-tile.selected { background: #1e1a0c; border-color: #c9a84c; color: #c9a84c; }
+
+#v3d-root .v3d-swatch {
+  width: 18px; height: 18px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+#v3d-root .v3d-tile-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Canvas ---- */
+#v3d-root #v3d-canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #090910;
+  min-height: 0;
+}
+
+#v3d-root #v3d-canvas-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}

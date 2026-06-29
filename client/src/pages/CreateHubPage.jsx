@@ -10,6 +10,13 @@ const TYPES = [
     desc: 'Design dungeon encounters tile by tile. Place walls, doors, traps, and features for your players to discover.',
   },
   {
+    key: 'voxel3d',
+    title: '3D Battlemap',
+    icon: '🧱',
+    href: '/create/voxel3d',
+    desc: 'Build dungeons in three dimensions. Stack voxel blocks to sculpt multi-level rooms, towers, and caverns.',
+  },
+  {
     key: 'article',
     title: 'Article',
     icon: '📜',
@@ -22,6 +29,13 @@ const TYPES = [
     icon: '🗺️',
     href: '/create/hexmap',
     desc: 'Chart the wilds. Place biomes, settlements, dungeons, and points of interest across your world.',
+  },
+  {
+    key: 'settlement',
+    title: 'Settlement',
+    icon: '🏘️',
+    href: '/create/settlement',
+    desc: 'Design villages, towns, and cities tile by tile. Place roads, buildings, and landmarks.',
   },
 ];
 
@@ -51,7 +65,7 @@ export default function CreateHubPage() {
           What would you like to build?
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
           {TYPES.map(t => {
             const count = getByType(t.key).length;
             return (

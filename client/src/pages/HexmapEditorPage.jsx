@@ -1,23 +1,26 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { getByType, getById } from '../lib/storage';
 import './hexmap.css';
 
 // ---- Biomes — matches db/seeds/geography_pillar/hex_types.json ----
 const BIOMES = {
-  ocean:    { label: 'Ocean',    color: '#1a4a6e' },
-  coast:    { label: 'Coast',    color: '#3a8abf' },
-  plains:   { label: 'Plains',   color: '#7eb05a' },
-  forest:   { label: 'Forest',   color: '#2d6a4f' },
-  hills:    { label: 'Hills',    color: '#7a9c52' },
-  highland: { label: 'Highland', color: '#8a9e72' },
-  mountain: { label: 'Mountain', color: '#7a7a8a' },
-  desert:   { label: 'Desert',   color: '#c9a84c' },
-  swamp:    { label: 'Swamp',    color: '#4a6741' },
+  ocean:      { label: 'Ocean',      color: '#1a4a6e' },
+  coast:      { label: 'Coast',      color: '#3a8abf' },
+  plains:     { label: 'Plains',     color: '#7eb05a' },
+  forest:     { label: 'Forest',     color: '#2d6a4f' },
+  hills:      { label: 'Hills',      color: '#7a9c52' },
+  highland:   { label: 'Highland',   color: '#8a9e72' },
+  mountain:   { label: 'Mountain',   color: '#7a7a8a' },
+  desert:     { label: 'Desert',     color: '#c9a84c' },
+  swamp:      { label: 'Swamp',      color: '#4a6741' },
+  settlement: { label: 'Settlement', color: '#8a6030' },
 };
 
 const DEFAULT_WEIGHTS = {
   ocean: 5, coast: 8, plains: 30, forest: 22,
   hills: 15, highland: 10, mountain: 5, desert: 3, swamp: 2,
+  settlement: 0,
 };
 
 // ---- Seeded RNG ----
@@ -82,15 +85,30 @@ export default function HexmapEditorPage() {
   const [searchParams] = useSearchParams();
   const contentId = searchParams.get('id') || null;
 
-  const [tab,     setTab]     = useState('biomes');
-  const [radius,  setRadius]  = useState(8);
-  const [seed,    setSeed]    = useState(() => Math.floor(Math.random() * 99999) + 1);
-  const [weights, setWeights] = useState(DEFAULT_WEIGHTS);
-  const [center,  setCenter]  = useState(null);   // { q, r } in odd-r offset, or null
-  const [picking, setPicking] = useState(false);  // waiting for canvas click
+  const [tab,      setTab]     = useState('biomes');
+  const [radius,   setRadius]  = useState(8);
+  const [seed,     setSeed]    = useState(() => Math.floor(Math.random() * 99999) + 1);
+  const [weights,  setWeights] = useState(DEFAULT_WEIGHTS);
+  const [center,   setCenter]  = useState(null);
+  const [picking,  setPicking] = useState(false);
+  const [articles,  setArticles]  = useState([]);
+  const [links,     setLinks]     = useState([]);
+  const [hoverCard, setHoverCard] = useState(null); // { name, preview, x, y, size }
 
   useEffect(() => {
     window.__hexmapContentId = contentId;
+    window.__hexmapOnLinksChanged = () => {
+      if (window.hexmapGetAllLinks) setLinks(window.hexmapGetAllLinks());
+    };
+
+    window.__hexmapOnHexHover = (q, r, article) => {
+      if (!article || q === null) { setHoverCard(null); return; }
+      const pos  = window.hexmapGetHexScreenPos?.(q, r);
+      if (!pos) { setHoverCard(null); return; }
+      const item = getById(article.id);
+      const preview = (item?.data?.text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+      setHoverCard({ name: article.name, preview, x: pos.x, y: pos.y, size: pos.size });
+    };
 
     const script = document.createElement('script');
     script.src = '/hexmap.js';
@@ -104,6 +122,14 @@ export default function HexmapEditorPage() {
       if (s) document.body.removeChild(s);
     };
   }, [contentId]);
+
+  // Refresh article list and links when Links tab is opened
+  useEffect(() => {
+    if (tab === 'links') {
+      setArticles(getByType('article'));
+      if (window.hexmapGetAllLinks) setLinks(window.hexmapGetAllLinks());
+    }
+  }, [tab]);
 
   // Cancel pick mode if user switches away from generate tab
   useEffect(() => {
@@ -160,6 +186,7 @@ export default function HexmapEditorPage() {
         <button className="hx-tool-btn" data-tool="erase">Erase <span className="hx-key">E</span></button>
         <button className="hx-tool-btn" data-tool="fill">Fill <span className="hx-key">F</span></button>
         <button className="hx-tool-btn" data-tool="pick">Pick <span className="hx-key">P</span></button>
+        <button className="hx-tool-btn" data-tool="pan">Pan <span className="hx-key">H</span></button>
         <div className="hx-tbsep" />
         <button id="btn-hx-undo" className="hx-tool-btn">↩ Undo</button>
         <button id="btn-hx-redo" className="hx-tool-btn">↪ Redo</button>
@@ -174,10 +201,60 @@ export default function HexmapEditorPage() {
           <div id="hx-sidebar-tabs">
             <button className={`hx-stab${tab === 'biomes'   ? ' active' : ''}`} onClick={() => setTab('biomes')}>Biomes</button>
             <button className={`hx-stab${tab === 'generate' ? ' active' : ''}`} onClick={() => setTab('generate')}>Generate</button>
+            <button className={`hx-stab${tab === 'links'    ? ' active' : ''}`} onClick={() => setTab('links')}>Links</button>
           </div>
 
           {/* Palette — always in DOM so hexmap.js can populate it */}
           <div id="hx-palette" style={{ display: tab === 'biomes' ? 'flex' : 'none' }} />
+
+          {/* Links panel */}
+          {tab === 'links' && (
+            <div id="hx-links-panel">
+              {/* Linked hexes */}
+              {links.length > 0 && (
+                <div className="hx-links-section">
+                  <div className="hx-links-label">On this map</div>
+                  {links.map(l => (
+                    <div key={`${l.q},${l.r}`} className="hx-link-row">
+                      <span className="hx-link-badge">A</span>
+                      <span className="hx-link-name" title={l.name}>{l.name}</span>
+                      <span className="hx-link-coord">({l.q},{l.r})</span>
+                      <button
+                        className="hx-link-unlink"
+                        title="Remove link"
+                        onClick={() => {
+                          if (window.hexmapUnlinkArticle) window.hexmapUnlinkArticle(l.q, l.r);
+                        }}
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Available articles */}
+              <div className="hx-links-section">
+                <div className="hx-links-label">Drag to a hex</div>
+                {articles.length === 0 ? (
+                  <div className="hx-links-empty">No articles saved yet.<br />Create one in the Article Editor.</div>
+                ) : (
+                  articles.map(a => (
+                    <div
+                      key={a.id}
+                      className="hx-draggable-article"
+                      draggable
+                      onDragStart={e => {
+                        e.dataTransfer.setData('application/hexmap-article', JSON.stringify({ id: a.id, name: a.name }));
+                        e.dataTransfer.effectAllowed = 'link';
+                      }}
+                    >
+                      <span className="hx-link-badge">A</span>
+                      <span className="hx-link-name" title={a.name}>{a.name}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Generate panel */}
           <div id="hx-gen-panel" style={{ display: tab === 'generate' ? 'flex' : 'none' }}>
@@ -267,14 +344,34 @@ export default function HexmapEditorPage() {
             </div>
           )}
         </div>
+
+        {/* Article hover card — mirrors the settlement card in the play tab */}
+        {hoverCard && (
+          <div id="hx-article-card" style={{
+            left: Math.max(8, Math.min(hoverCard.x - 120, window.innerWidth - 264)),
+            top:  hoverCard.y - hoverCard.size * 1.4,
+            transform: 'translateY(-100%)',
+          }}>
+            <div className="hx-ac-header">
+              <span className="hx-ac-name">{hoverCard.name}</span>
+              <span className="hx-ac-tag">Article</span>
+            </div>
+            {hoverCard.preview && (
+              <p className="hx-ac-preview">
+                {hoverCard.preview}{hoverCard.preview.length >= 200 ? '…' : ''}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div id="hx-statusbar">
         <span id="hx-status-pos" />
         <span id="hx-status-tile" />
+        <span id="hx-status-article" style={{ color: '#c9a84c' }} />
         <span className="sbsep">|</span>
         <span id="hx-status-tool">Tool: paint</span>
-        <span id="hx-status-hint">Right-click or middle-drag to pan · Scroll to zoom · Ctrl+Z undo</span>
+        <span id="hx-status-hint">Hold Space to pan · Scroll to zoom · Ctrl+Z undo · Drag articles from Links tab</span>
       </div>
     </div>
   );

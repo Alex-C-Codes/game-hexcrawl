@@ -6,6 +6,8 @@ import BattlemapPage          from './pages/BattlemapPage';
 import CreateHubPage          from './pages/CreateHubPage';
 import LibraryPage            from './pages/LibraryPage';
 import HexmapEditorPage       from './pages/HexmapEditorPage';
+import Voxel3DPage            from './pages/Voxel3DPage';
+import SettlementPage         from './pages/SettlementPage';
 import Navbar                 from './components/Navbar';
 
 function Layout() {
@@ -29,6 +31,8 @@ export default function App() {
           <Route path="/create/battlemap"          element={<BattlemapPage />} />
           <Route path="/create/article"            element={<ArticlePage />} />
           <Route path="/create/hexmap"             element={<HexmapEditorPage />} />
+          <Route path="/create/voxel3d"           element={<Voxel3DPage />} />
+          <Route path="/create/settlement"        element={<SettlementPage />} />
           <Route path="/library"                   element={<LibraryPage />} />
         </Route>
       </Routes>

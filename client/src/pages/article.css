@@ -1,0 +1,196 @@
+/* Article Editor — scoped to #article-root */
+#article-root {
+  position: fixed;
+  top: 44px;
+  left: 0; right: 0; bottom: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: #0d0d0d;
+  font-family: Georgia, serif;
+  color: #e0d8c8;
+  overflow: hidden;
+}
+
+/* Header */
+#article-root #art-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 44px;
+  background: #0a0a0a;
+  border-bottom: 1px solid #1a1a1a;
+  flex-shrink: 0;
+}
+#article-root h1 {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: #c9a84c;
+  letter-spacing: 0.12em;
+  margin: 0;
+  white-space: nowrap;
+}
+#article-root .art-sep {
+  width: 1px;
+  height: 22px;
+  background: #1e1e1e;
+  flex-shrink: 0;
+}
+#article-root .art-label {
+  font-size: 0.65rem;
+  color: #4a4540;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+#article-root #art-input-title {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #e0d8c8;
+  font-family: Georgia, serif;
+  font-size: 0.85rem;
+  padding: 3px 8px;
+  outline: none;
+  width: 260px;
+}
+#article-root #art-input-title:focus { border-color: #5a5040; }
+#article-root .art-btn {
+  background: #181510;
+  border: 1px solid #2a2520;
+  border-radius: 4px;
+  color: #a09060;
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+#article-root .art-btn:hover { border-color: #5a5040; color: #c9a84c; }
+#article-root .art-btn.primary { color: #c9a84c; border-color: #c9a84c; background: #1e1a0c; }
+#article-root .art-btn.primary:hover { background: #2a2010; }
+
+/* Toolbar */
+#article-root #art-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 10px;
+  background: #0e0e0e;
+  border-bottom: 1px solid #181818;
+  flex-shrink: 0;
+}
+#article-root .art-tool-btn {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 4px;
+  color: #7a7060;
+  font-family: Georgia, serif;
+  font-size: 0.8rem;
+  padding: 3px 9px;
+  cursor: pointer;
+  min-width: 30px;
+  text-align: center;
+  user-select: none;
+}
+#article-root .art-tool-btn:hover { border-color: #5a5040; color: #c9a84c; }
+#article-root .art-tool-btn.art-bold   { font-weight: bold; }
+#article-root .art-tool-btn.art-italic { font-style: italic; }
+#article-root .art-tbsep {
+  width: 1px;
+  height: 20px;
+  background: #1e1e1e;
+  flex-shrink: 0;
+  margin: 0 3px;
+}
+
+/* Content area */
+#article-root #art-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #09090a;
+  display: flex;
+  justify-content: center;
+  padding: 56px 24px;
+}
+#article-root #art-editor {
+  width: 100%;
+  max-width: 740px;
+  min-height: calc(100vh - 200px);
+  outline: none;
+  color: #d0c8b8;
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.85;
+  caret-color: #c9a84c;
+}
+#article-root #art-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #282420;
+  pointer-events: none;
+}
+
+/* Typography inside editor */
+#article-root #art-editor h1 {
+  color: #c9a84c;
+  font-size: 1.75rem;
+  font-weight: normal;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid #2a2520;
+  padding-bottom: 10px;
+  margin: 36px 0 18px;
+}
+#article-root #art-editor h1:first-child { margin-top: 0; }
+#article-root #art-editor h2 {
+  color: #b09040;
+  font-size: 1.25rem;
+  font-weight: normal;
+  letter-spacing: 0.07em;
+  margin: 28px 0 12px;
+}
+#article-root #art-editor h3 {
+  color: #907830;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  margin: 20px 0 8px;
+}
+#article-root #art-editor p { margin: 0 0 14px; }
+#article-root #art-editor blockquote {
+  border-left: 3px solid #c9a84c;
+  margin: 16px 0;
+  padding: 8px 20px;
+  color: #8a8070;
+  font-style: italic;
+  background: rgba(201,168,76,0.04);
+}
+#article-root #art-editor ul,
+#article-root #art-editor ol {
+  padding-left: 26px;
+  margin: 6px 0 14px;
+}
+#article-root #art-editor li { margin-bottom: 4px; color: #c0b8a8; }
+#article-root #art-editor hr {
+  border: none;
+  border-top: 1px solid #282420;
+  margin: 28px 0;
+}
+#article-root #art-editor b,
+#article-root #art-editor strong { color: #e0d8c8; }
+
+/* Status bar */
+#article-root #art-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 12px;
+  background: #0a0a0a;
+  border-top: 1px solid #141414;
+  font-size: 0.65rem;
+  color: #3a3830;
+  flex-shrink: 0;
+  height: 26px;
+}
+#article-root .art-sbsep { color: #1e1e1e; }
+#article-root #art-status-hint { margin-left: auto; }
