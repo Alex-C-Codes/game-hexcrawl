@@ -1,28 +1,57 @@
-const KEY = 'hx_content';
+import { supabase } from './supabaseClient';
 
-export function getAll() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || []; }
-  catch { return []; }
+function mapRow(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    name: row.name,
+    data: row.data,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
-export function getByType(type) {
-  return getAll().filter(i => i.type === type);
+export async function getAll() {
+  const { data, error } = await supabase
+    .from('library_items')
+    .select('*')
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return data.map(mapRow);
 }
 
-export function getById(id) {
-  return getAll().find(i => i.id === id) ?? null;
+export async function getByType(type) {
+  const { data, error } = await supabase
+    .from('library_items')
+    .select('*')
+    .eq('type', type)
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return data.map(mapRow);
 }
 
-export function upsert(item) {
-  const all = getAll();
-  const now = new Date().toISOString();
-  const idx = all.findIndex(i => i.id === item.id);
-  const record = { ...item, updatedAt: now, createdAt: all[idx]?.createdAt ?? now };
-  if (idx >= 0) all[idx] = record; else all.unshift(record);
-  localStorage.setItem(KEY, JSON.stringify(all));
-  return record;
+export async function getById(id) {
+  const { data, error } = await supabase
+    .from('library_items')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapRow(data) : null;
 }
 
-export function remove(id) {
-  localStorage.setItem(KEY, JSON.stringify(getAll().filter(i => i.id !== id)));
+export async function upsert(item) {
+  const row = { id: item.id, type: item.type, name: item.name, data: item.data };
+  const { data, error } = await supabase
+    .from('library_items')
+    .upsert(row)
+    .select()
+    .single();
+  if (error) throw error;
+  return mapRow(data);
+}
+
+export async function remove(id) {
+  const { error } = await supabase.from('library_items').delete().eq('id', id);
+  if (error) throw error;
 }

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getAll, remove } from '../lib/storage';
+import { getAll, remove, upsert } from '../lib/storage';
+
+const LEGACY_KEY = 'hx_content';
 
 const TYPE_LABELS = { battlemap: 'Battlemap', article: 'Article', hexmap: 'Hex Map' };
 const TYPE_ICONS  = { battlemap: '⚔️', article: '📜', hexmap: '🗺️' };
@@ -18,14 +20,40 @@ function formatDate(iso) {
 export default function LibraryPage() {
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState('All');
+  const [hasLegacyData, setHasLegacyData] = useState(false);
+  const [importing, setImporting] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => { setItems(getAll()); }, []);
+  useEffect(() => {
+    getAll().then(setItems);
+    try {
+      const legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || '[]');
+      setHasLegacyData(Array.isArray(legacy) && legacy.length > 0);
+    } catch { /* ignore malformed legacy data */ }
+  }, []);
 
-  function handleDelete(id, name) {
+  async function handleDelete(id, name) {
     if (!confirm(`Delete "${name}"?`)) return;
-    remove(id);
-    setItems(getAll());
+    await remove(id);
+    setItems(await getAll());
+  }
+
+  async function handleImportLegacy() {
+    let legacy;
+    try {
+      legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || '[]');
+    } catch {
+      legacy = [];
+    }
+    if (!legacy.length) { setHasLegacyData(false); return; }
+
+    setImporting(true);
+    for (const item of legacy) {
+      await upsert({ id: item.id, type: item.type, name: item.name, data: item.data });
+    }
+    setImporting(false);
+    setHasLegacyData(false);
+    setItems(await getAll());
   }
 
   const typeKey = TYPE_KEYS[filter];
@@ -44,9 +72,32 @@ export default function LibraryPage() {
             + Create
           </Link>
         </div>
-        <p style={{ color: '#3a3830', fontSize: '0.8rem', letterSpacing: '0.1em', marginBottom: 32 }}>
+        <p style={{ color: '#3a3830', fontSize: '0.8rem', letterSpacing: '0.1em', marginBottom: 12 }}>
           {items.length} item{items.length !== 1 ? 's' : ''} saved
         </p>
+
+        {hasLegacyData && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            background: '#181510', border: '1px solid #3a3020', borderRadius: 6,
+            padding: '10px 16px', marginBottom: 20,
+          }}>
+            <span style={{ color: '#8a7a50', fontSize: '0.78rem' }}>
+              Maps saved in this browser before accounts existed haven't been imported yet.
+            </span>
+            <button
+              onClick={handleImportLegacy}
+              disabled={importing}
+              style={{
+                background: 'transparent', border: '1px solid #c9a84c', borderRadius: 4,
+                color: '#c9a84c', fontFamily: 'Georgia, serif', fontSize: '0.74rem',
+                padding: '5px 14px', cursor: importing ? 'default' : 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              {importing ? 'Importing…' : 'Import into my library'}
+            </button>
+          </div>
+        )}
 
         {/* Filter tabs */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 28 }}>

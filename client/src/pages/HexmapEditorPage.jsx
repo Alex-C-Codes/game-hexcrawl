@@ -1,27 +1,114 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getByType, getById } from '../lib/storage';
+import { getByType } from '../lib/storage';
 import './hexmap.css';
 
-// ---- Biomes — matches db/seeds/geography_pillar/hex_types.json ----
-const BIOMES = {
-  ocean:      { label: 'Ocean',      color: '#1a4a6e' },
-  coast:      { label: 'Coast',      color: '#3a8abf' },
-  plains:     { label: 'Plains',     color: '#7eb05a' },
-  forest:     { label: 'Forest',     color: '#2d6a4f' },
-  hills:      { label: 'Hills',      color: '#7a9c52' },
-  highland:   { label: 'Highland',   color: '#8a9e72' },
-  mountain:   { label: 'Mountain',   color: '#7a7a8a' },
-  desert:     { label: 'Desert',     color: '#c9a84c' },
-  swamp:      { label: 'Swamp',      color: '#4a6741' },
-  settlement: { label: 'Settlement', color: '#8a6030' },
-};
+// ---- Biomes, grouped by setting — Classic matches db/seeds/geography_pillar/hex_types.json ----
+const BIOME_CATEGORIES = [
+  {
+    id: 'classic', label: 'Classic',
+    biomes: {
+      ocean:      { label: 'Ocean',      color: '#1a4a6e', weight: 5 },
+      coast:      { label: 'Coast',      color: '#3a8abf', weight: 8 },
+      plains:     { label: 'Plains',     color: '#7eb05a', weight: 30 },
+      grassland:  { label: 'Grassland',  color: '#9bc25c', weight: 20 },
+      farm:       { label: 'Farm',       color: '#b8a852', weight: 0 },
+      forest:     { label: 'Forest',     color: '#2d6a4f', weight: 22 },
+      jungle:     { label: 'Jungle',     color: '#1f5c38', weight: 10 },
+      mushroomforest: { label: 'Mushroom Forest', color: '#3a6a4a', weight: 0 },
+      worldtree:      { label: 'World Tree',      color: '#4a5a3a', weight: 0 },
+      hills:      { label: 'Hills',      color: '#7a9c52', weight: 15 },
+      highland:   { label: 'Highland',   color: '#8a9e72', weight: 10 },
+      mountain:   { label: 'Mountain',   color: '#7a7a8a', weight: 5 },
+      tundra:     { label: 'Tundra',     color: '#a8c4d4', weight: 4 },
+      desert:     { label: 'Desert',     color: '#c9a84c', weight: 3 },
+      swamp:      { label: 'Swamp',      color: '#4a6741', weight: 2 },
+      settlement: { label: 'Settlement', color: '#8a6030', weight: 0 },
+      beacon:     { label: 'Beacon',     color: '#b23a2e', weight: 0 },
+      fort:       { label: 'Fort',       color: '#6a6a78', weight: 0 },
+      tower:        { label: 'Tower',        color: '#8a8078', weight: 0 },
+      ancientruins: { label: 'Ruins',        color: '#7a8070', weight: 0 },
+      temple:       { label: 'Temple',       color: '#d4c896', weight: 0 },
+    },
+  },
+  {
+    id: 'undead', label: 'Undead',
+    biomes: {
+      graveyard:      { label: 'Graveyard',       color: '#5a5a52', weight: 0 },
+      hauntedforest:  { label: 'Haunted Forest',  color: '#2a3a30', weight: 0 },
+      necropolis:     { label: 'Necropolis',      color: '#8a8a92', weight: 0 },
+      bonefields:     { label: 'Bone Fields',     color: '#c9c0a0', weight: 0 },
+      cursedswamp:    { label: 'Cursed Swamp',    color: '#3a4a42', weight: 0 },
+      crypt:          { label: 'Crypt',           color: '#2a2a30', weight: 0 },
+      witheredwastes: { label: 'Withered Wastes', color: '#6a6050', weight: 0 },
+    },
+  },
+  {
+    id: 'sky', label: 'Sky Islands',
+    biomes: {
+      void:     { label: 'Void',           color: '#0d0d1f', weight: 0 },
+      cloudsea: { label: 'Cloud Sea',       color: '#c7d2df', weight: 0 },
+      skyreef:  { label: 'Sky Reef',        color: '#5c8a6f', weight: 0 },
+      storm:    { label: 'Storm Front',     color: '#453a5e', weight: 0 },
+      crystal:  { label: 'Crystal Spire',   color: '#8f6fd1', weight: 0 },
+      ashfall:  { label: 'Ashfall Isle',    color: '#4a3d38', weight: 0 },
+      ruins:    { label: 'Ruined Isle',     color: '#a99872', weight: 0 },
+      skydock:  { label: 'Skydock',         color: '#c98a4c', weight: 0 },
+      airship:        { label: 'Airship',        color: '#7a8ba0', weight: 0 },
+      flyingfortress: { label: 'Flying Fortress', color: '#5a5a68', weight: 0 },
+      crackedland:    { label: 'Cracked Land',   color: '#8a7860', weight: 0 },
+    },
+  },
+  {
+    id: 'wasteland', label: 'Wasteland',
+    biomes: {
+      wastes:      { label: 'Irradiated Wastes', color: '#8a8a4a', weight: 0 },
+      ruinfield:   { label: 'Ruined City',       color: '#5a5650', weight: 0 },
+      craterzone:  { label: 'Blast Crater',      color: '#3a4a2e', weight: 0 },
+      deadforest:  { label: 'Dead Forest',       color: '#554d40', weight: 0 },
+      toxicswamp:  { label: 'Toxic Sludge',      color: '#5a6b3a', weight: 0 },
+      dunefield:   { label: 'Ashen Dunes',       color: '#a89f88', weight: 0 },
+      junkyard:    { label: 'Scrapyard',         color: '#7a5236', weight: 0 },
+      bunker:      { label: 'Bunker Outpost',    color: '#4a5240', weight: 0 },
+    },
+  },
+  {
+    id: 'steampunk', label: 'Steampunk',
+    biomes: {
+      factoryland:  { label: 'Factory District', color: '#4a4038', weight: 0 },
+      clockwork:    { label: 'Clockwork Hills',  color: '#8a7040', weight: 0 },
+      railway:      { label: 'Rail Yards',       color: '#6a5a4a', weight: 0 },
+      aetherfield:  { label: 'Aether Fields',    color: '#5a7a9c', weight: 0 },
+      smogmarsh:    { label: 'Smog Marsh',       color: '#5a5a3a', weight: 0 },
+      slagmountain: { label: 'Slag Peaks',       color: '#6a4a42', weight: 0 },
+      airdock:      { label: 'Airship Yard',     color: '#b5793f', weight: 0 },
+      quarry:       { label: 'Coal Quarry',      color: '#3a352f', weight: 0 },
+    },
+  },
+  {
+    id: 'underdark', label: 'Underdark',
+    biomes: {
+      cavern:           { label: 'Cavern',           color: '#3a3038', weight: 0 },
+      chasm:            { label: 'Chasm',             color: '#0a0a12', weight: 0 },
+      fungalforest:     { label: 'Fungal Forest',     color: '#4a6b5c', weight: 0 },
+      undergroundlake:  { label: 'Underground Lake',  color: '#1a2a3a', weight: 0 },
+      crystalcave:      { label: 'Crystal Cave',      color: '#3a6a6e', weight: 0 },
+      lavatube:         { label: 'Lava Tube',         color: '#4a2a20', weight: 0 },
+      deeproad:         { label: 'Deep Road',         color: '#6a6258', weight: 0 },
+      drowoutpost:      { label: 'Drow Outpost',      color: '#3a2a4a', weight: 0 },
+    },
+  },
+];
 
-const DEFAULT_WEIGHTS = {
-  ocean: 5, coast: 8, plains: 30, forest: 22,
-  hills: 15, highland: 10, mountain: 5, desert: 3, swamp: 2,
-  settlement: 0,
-};
+const BIOMES = Object.assign({}, ...BIOME_CATEGORIES.map(c => c.biomes));
+const DEFAULT_WEIGHTS = Object.fromEntries(Object.entries(BIOMES).map(([k, b]) => [k, b.weight]));
+
+// ---- Map layers — mirror of [{id,name}] managed live by public/hexmap.js ----
+const DEFAULT_LAYERS = [
+  { id: '_sky',       name: 'Sky Islands' },
+  { id: '_realm',     name: 'Realm' },
+  { id: '_underdark', name: 'Underdark' },
+];
 
 // ---- Seeded RNG ----
 function makeRng(seed) {
@@ -86,6 +173,14 @@ export default function HexmapEditorPage() {
   const contentId = searchParams.get('id') || null;
 
   const [tab,      setTab]     = useState('biomes');
+  const [layers,   setLayers]  = useState(DEFAULT_LAYERS);
+  const [activeLayerIdx, setActiveLayerIdx] = useState(1);
+  const [dragLayerIdx,   setDragLayerIdx]   = useState(null);
+  const [dragOverIdx,    setDragOverIdx]    = useState(null);
+  const [ghostAbove, setGhostAbove] = useState(false);
+  const [ghostBelow, setGhostBelow] = useState(false);
+  const [radiusToolValue, setRadiusToolValue] = useState(3);
+  const [radiusToolMode,  setRadiusToolMode]  = useState('ring');
   const [radius,   setRadius]  = useState(8);
   const [seed,     setSeed]    = useState(() => Math.floor(Math.random() * 99999) + 1);
   const [weights,  setWeights] = useState(DEFAULT_WEIGHTS);
@@ -94,6 +189,13 @@ export default function HexmapEditorPage() {
   const [articles,  setArticles]  = useState([]);
   const [links,     setLinks]     = useState([]);
   const [hoverCard, setHoverCard] = useState(null); // { name, preview, x, y, size }
+  const articlesMapRef = useRef(new Map());
+
+  const refreshArticles = useCallback(async () => {
+    const list = await getByType('article');
+    setArticles(list);
+    articlesMapRef.current = new Map(list.map(a => [a.id, a]));
+  }, []);
 
   useEffect(() => {
     window.__hexmapContentId = contentId;
@@ -101,14 +203,26 @@ export default function HexmapEditorPage() {
       if (window.hexmapGetAllLinks) setLinks(window.hexmapGetAllLinks());
     };
 
+    window.__hexmapOnLayersChanged = (list, activeIdx) => {
+      setLayers(list);
+      setActiveLayerIdx(activeIdx);
+    };
+
+    window.__hexmapOnGhostChanged = (above, below) => {
+      setGhostAbove(above);
+      setGhostBelow(below);
+    };
+
     window.__hexmapOnHexHover = (q, r, article) => {
       if (!article || q === null) { setHoverCard(null); return; }
       const pos  = window.hexmapGetHexScreenPos?.(q, r);
       if (!pos) { setHoverCard(null); return; }
-      const item = getById(article.id);
+      const item = articlesMapRef.current.get(article.id);
       const preview = (item?.data?.text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
       setHoverCard({ name: article.name, preview, x: pos.x, y: pos.y, size: pos.size });
     };
+
+    refreshArticles();
 
     const script = document.createElement('script');
     script.src = '/hexmap.js';
@@ -121,15 +235,118 @@ export default function HexmapEditorPage() {
       const s = document.querySelector('script[src="/hexmap.js"]');
       if (s) document.body.removeChild(s);
     };
-  }, [contentId]);
+  }, [contentId, refreshArticles]);
 
-  // Refresh article list and links when Links tab is opened
+  // Refresh article list and links when the Links tab is opened, or the active layer changes
   useEffect(() => {
     if (tab === 'links') {
-      setArticles(getByType('article'));
+      refreshArticles();
       if (window.hexmapGetAllLinks) setLinks(window.hexmapGetAllLinks());
     }
-  }, [tab]);
+  }, [tab, activeLayerIdx, refreshArticles]);
+
+  const switchLayer = useCallback((idx) => {
+    window.hexmapSwitchLayer?.(idx);
+  }, []);
+
+  const addLayer = useCallback(() => {
+    window.hexmapAddLayer?.();
+  }, []);
+
+  const renameLayer = useCallback((idx, currentName) => {
+    const name = window.prompt('Rename layer:', currentName);
+    if (name && name.trim()) window.hexmapRenameLayer?.(idx, name.trim());
+  }, []);
+
+  const deleteLayer = useCallback((idx, name) => {
+    if (!window.confirm(`Delete layer "${name}"? This cannot be undone.`)) return;
+    window.hexmapDeleteLayer?.(idx);
+  }, []);
+
+  const toggleGhostAbove = useCallback(() => window.hexmapToggleGhostAbove?.(), []);
+  const toggleGhostBelow = useCallback(() => window.hexmapToggleGhostBelow?.(), []);
+
+  const changeRadiusToolValue = useCallback((n) => {
+    setRadiusToolValue(n);
+    window.hexmapSetRadiusValue?.(n);
+  }, []);
+
+  const changeRadiusToolMode = useCallback((mode) => {
+    setRadiusToolMode(mode);
+    window.hexmapSetRadiusMode?.(mode);
+  }, []);
+
+  const exportPdf = useCallback(async () => {
+    const pages = window.hexmapExportPdfPages?.();
+    if (!pages || !pages.length) {
+      window.hexmapShowToast?.('Nothing drawn yet — paint some hexes first.');
+      return;
+    }
+    const { jsPDF } = await import('jspdf');
+    // jsPDF's 'px' unit distorts page size vs. image size when width/height are passed
+    // as a raw format array — 'pt' with 1 image-pixel == 1 point avoids that entirely.
+    // Orientation must be passed explicitly too, or jsPDF silently swaps w/h to force portrait.
+    const orientationOf = (page) => (page.width >= page.height ? 'landscape' : 'portrait');
+    const doc = new jsPDF({ unit: 'pt', format: [pages[0].width, pages[0].height], orientation: orientationOf(pages[0]), compress: true });
+    pages.forEach((page, i) => {
+      if (i > 0) doc.addPage([page.width, page.height], orientationOf(page));
+      doc.addImage(page.dataUrl, 'PNG', 0, 0, page.width, page.height);
+      // Label each page with its layer name so a multi-layer export stays legible
+      doc.setFillColor(10, 8, 6);
+      doc.rect(0, 0, Math.min(240, page.width), 34, 'F');
+      doc.setTextColor(201, 168, 76);
+      doc.setFontSize(18);
+      doc.text(page.name, 12, 23);
+    });
+    const name = document.getElementById('hx-input-name')?.value || 'Untitled Hex Map';
+    doc.save(`${name}.pdf`);
+  }, []);
+
+  const exportJpg = useCallback(() => {
+    const pages = window.hexmapExportImages?.('image/jpeg');
+    if (!pages || !pages.length) {
+      window.hexmapShowToast?.('Nothing drawn yet — paint some hexes first.');
+      return;
+    }
+    const mapName = document.getElementById('hx-input-name')?.value || 'Untitled Hex Map';
+    // One file per non-empty layer — a single image can't hold multiple layers the way a PDF can.
+    pages.forEach(page => {
+      const suffix = pages.length > 1 ? ` - ${page.name}` : '';
+      const a = document.createElement('a');
+      a.href = page.dataUrl;
+      a.download = `${mapName}${suffix}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  }, []);
+
+  const layerDragHandlers = useCallback((idx) => ({
+    draggable: true,
+    onDragStart: (e) => {
+      setDragLayerIdx(idx);
+      e.dataTransfer.effectAllowed = 'move';
+    },
+    onDragOver: (e) => {
+      e.preventDefault();
+      if (dragOverIdx !== idx) setDragOverIdx(idx);
+    },
+    onDragLeave: () => {
+      setDragOverIdx(o => (o === idx ? null : o));
+    },
+    onDrop: (e) => {
+      e.preventDefault();
+      setDragOverIdx(null);
+      const from = dragLayerIdx;
+      setDragLayerIdx(null);
+      if (from === null || from === idx) return;
+      window.hexmapReorderLayer?.(from, idx);
+    },
+    onDragEnd: () => {
+      setDragLayerIdx(null);
+      setDragOverIdx(null);
+    },
+  }), [dragLayerIdx, dragOverIdx]);
 
   // Cancel pick mode if user switches away from generate tab
   useEffect(() => {
@@ -178,7 +395,55 @@ export default function HexmapEditorPage() {
         <div className="hx-sep" />
         <button id="btn-hx-save"   className="hx-btn primary">Save</button>
         <button id="btn-hx-export" className="hx-btn">Export JSON</button>
+        <button className="hx-btn" onClick={exportPdf}>Export PDF</button>
+        <button className="hx-btn" onClick={exportJpg}>Export JPG</button>
         <button id="btn-hx-fit"    className="hx-btn">Fit View</button>
+      </div>
+
+      <div id="hx-layerbar">
+        <span className="hx-layerbar-label">Layers</span>
+        <div id="hx-layer-tabs">
+          {layers.map((l, i) => (
+            <div
+              key={l.id}
+              className={
+                'hx-layer-tab'
+                + (i === activeLayerIdx ? ' active' : '')
+                + (dragLayerIdx === i ? ' dragging' : '')
+                + (dragOverIdx === i && dragLayerIdx !== i ? ' dragover' : '')
+              }
+              title="Drag to reorder · Double-click to rename"
+              onClick={() => switchLayer(i)}
+              onDoubleClick={() => renameLayer(i, l.name)}
+              {...layerDragHandlers(i)}
+            >
+              <span className="hx-layer-tab-name">{l.name}</span>
+              {layers.length > 1 && (
+                <button
+                  className="hx-layer-tab-close"
+                  title="Delete layer"
+                  onClick={e => { e.stopPropagation(); deleteLayer(i, l.name); }}
+                >×</button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button className="hx-layer-add" onClick={addLayer}>+ Layer</button>
+        <div className="hx-tbsep" />
+        {activeLayerIdx > 0 && (
+          <button
+            className={`hx-layer-ghost${ghostAbove ? ' active' : ''}`}
+            title={`Faintly show "${layers[activeLayerIdx - 1]?.name}" above`}
+            onClick={toggleGhostAbove}
+          >▲ Ghost</button>
+        )}
+        {activeLayerIdx < layers.length - 1 && (
+          <button
+            className={`hx-layer-ghost${ghostBelow ? ' active' : ''}`}
+            title={`Faintly show "${layers[activeLayerIdx + 1]?.name}" below`}
+            onClick={toggleGhostBelow}
+          >▼ Ghost</button>
+        )}
       </div>
 
       <div id="hx-toolbar">
@@ -186,6 +451,23 @@ export default function HexmapEditorPage() {
         <button className="hx-tool-btn" data-tool="erase">Erase <span className="hx-key">E</span></button>
         <button className="hx-tool-btn" data-tool="fill">Fill <span className="hx-key">F</span></button>
         <button className="hx-tool-btn" data-tool="pick">Pick <span className="hx-key">P</span></button>
+        <button className="hx-tool-btn" data-tool="route">Route <span className="hx-key">R</span></button>
+        <button className="hx-tool-btn" data-tool="radius">Radius</button>
+        <input
+          type="number" min={0} max={30} value={radiusToolValue}
+          onChange={e => changeRadiusToolValue(Math.max(0, Math.min(30, +e.target.value || 0)))}
+          className="hx-gen-input" title="Radius (hexes)"
+          style={{ width: 40, padding: '4px 5px' }}
+        />
+        <select
+          value={radiusToolMode}
+          onChange={e => changeRadiusToolMode(e.target.value)}
+          className="hx-gen-input" title="Ring: just the outer edge · Fill: solid disk"
+          style={{ width: 62, padding: '4px 5px' }}
+        >
+          <option value="ring">Ring</option>
+          <option value="fill">Fill</option>
+        </select>
         <button className="hx-tool-btn" data-tool="pan">Pan <span className="hx-key">H</span></button>
         <div className="hx-tbsep" />
         <button id="btn-hx-undo" className="hx-tool-btn">↩ Undo</button>
@@ -200,12 +482,16 @@ export default function HexmapEditorPage() {
         <div id="hx-sidebar">
           <div id="hx-sidebar-tabs">
             <button className={`hx-stab${tab === 'biomes'   ? ' active' : ''}`} onClick={() => setTab('biomes')}>Biomes</button>
+            <button className={`hx-stab${tab === 'routes'   ? ' active' : ''}`} onClick={() => setTab('routes')}>Routes</button>
             <button className={`hx-stab${tab === 'generate' ? ' active' : ''}`} onClick={() => setTab('generate')}>Generate</button>
             <button className={`hx-stab${tab === 'links'    ? ' active' : ''}`} onClick={() => setTab('links')}>Links</button>
           </div>
 
           {/* Palette — always in DOM so hexmap.js can populate it */}
           <div id="hx-palette" style={{ display: tab === 'biomes' ? 'flex' : 'none' }} />
+
+          {/* Route palette — always in DOM so hexmap.js can populate it */}
+          <div id="hx-route-palette" style={{ display: tab === 'routes' ? 'flex' : 'none' }} />
 
           {/* Links panel */}
           {tab === 'links' && (
@@ -298,16 +584,23 @@ export default function HexmapEditorPage() {
             {/* Biome weights */}
             <div>
               <SLabel>Biome Weights</SLabel>
-              {Object.entries(BIOMES).map(([key, { label, color }]) => (
-                <div key={key} style={{ marginBottom: 6 }}>
-                  <div className="hx-gen-biome-row">
-                    <span className="hx-gen-biome-swatch" style={{ background: color }} />
-                    <span className="hx-gen-biome-name">{label}</span>
-                    <span className="hx-gen-biome-val">{weights[key]}</span>
+              {BIOME_CATEGORIES.map(cat => (
+                <div key={cat.id} style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5a5040', marginBottom: 5 }}>
+                    {cat.label}
                   </div>
-                  <input type="range" min={0} max={60} value={weights[key]}
-                    onChange={e => setWeights(w => ({ ...w, [key]: +e.target.value }))}
-                    className="hx-gen-slider" />
+                  {Object.entries(cat.biomes).map(([key, { label, color }]) => (
+                    <div key={key} style={{ marginBottom: 6 }}>
+                      <div className="hx-gen-biome-row">
+                        <span className="hx-gen-biome-swatch" style={{ background: color }} />
+                        <span className="hx-gen-biome-name">{label}</span>
+                        <span className="hx-gen-biome-val">{weights[key]}</span>
+                      </div>
+                      <input type="range" min={0} max={60} value={weights[key]}
+                        onChange={e => setWeights(w => ({ ...w, [key]: +e.target.value }))}
+                        className="hx-gen-slider" />
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

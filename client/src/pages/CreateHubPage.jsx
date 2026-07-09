@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getByType } from '../lib/storage';
+import { getAll } from '../lib/storage';
 
 const TYPES = [
   {
@@ -55,6 +56,19 @@ const cardStyle = {
 };
 
 export default function CreateHubPage() {
+  const [counts, setCounts] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    getAll().then(items => {
+      if (cancelled) return;
+      const byType = {};
+      for (const item of items) byType[item.type] = (byType[item.type] || 0) + 1;
+      setCounts(byType);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div style={{ background: '#111', minHeight: '100vh', fontFamily: 'Georgia, serif', paddingTop: 80 }}>
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 24px' }}>
@@ -67,7 +81,7 @@ export default function CreateHubPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
           {TYPES.map(t => {
-            const count = getByType(t.key).length;
+            const count = counts[t.key] || 0;
             return (
               <Link key={t.key} to={t.href} style={cardStyle}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#c9a84c'; e.currentTarget.style.background = '#181828'; }}

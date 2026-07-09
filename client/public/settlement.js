@@ -264,16 +264,10 @@ function stCurrentData() {
   return { name: stMapName, tiles: [...stGrid.entries()] };
 }
 
-function stSaveToLibrary() {
+async function stSaveToLibrary() {
   try {
     if (!stCurrentId) stCurrentId = crypto.randomUUID();
-    const all = JSON.parse(localStorage.getItem('hx_content') || '[]');
-    const now = new Date().toISOString();
-    const idx = all.findIndex(i => i.id === stCurrentId);
-    const record = { id: stCurrentId, type: 'settlement', name: stMapName,
-      data: stCurrentData(), createdAt: all[idx]?.createdAt ?? now, updatedAt: now };
-    if (idx >= 0) all[idx] = record; else all.unshift(record);
-    localStorage.setItem('hx_content', JSON.stringify(all));
+    await window.hxStorage.upsert({ id: stCurrentId, type: 'settlement', name: stMapName, data: stCurrentData() });
     stShowToast('Saved to library');
   } catch (err) { alert('Save failed: ' + err.message); }
 }
@@ -484,7 +478,7 @@ function stOnKeyUp(e) {
 }
 
 // ── init ──────────────────────────────────────────────────────────────────────
-function stInit() {
+async function stInit() {
   stCanvas = document.getElementById('st-canvas');
   if (!stCanvas) return;
   stCtx = stCanvas.getContext('2d');
@@ -503,8 +497,7 @@ function stInit() {
   const incomingId = window.__settlementContentId || null;
   if (incomingId) {
     try {
-      const all  = JSON.parse(localStorage.getItem('hx_content') || '[]');
-      const item = all.find(i => i.id === incomingId);
+      const item = await window.hxStorage.getById(incomingId);
       if (item?.data) {
         stCurrentId = incomingId;
         stMapName   = item.name || 'Untitled Settlement';

@@ -1234,15 +1234,10 @@ function currentData() {
   };
 }
 
-function saveToLibrary() {
+async function saveToLibrary() {
   try {
     if (!currentContentId) currentContentId = crypto.randomUUID();
-    const all = JSON.parse(localStorage.getItem('hx_content') || '[]');
-    const now = new Date().toISOString();
-    const idx = all.findIndex(i => i.id === currentContentId);
-    const record = { id: currentContentId, type: 'battlemap', name: mapName, data: currentData(), createdAt: all[idx]?.createdAt ?? now, updatedAt: now };
-    if (idx >= 0) all[idx] = record; else all.unshift(record);
-    localStorage.setItem('hx_content', JSON.stringify(all));
+    await window.hxStorage.upsert({ id: currentContentId, type: 'battlemap', name: mapName, data: currentData() });
     showToast('Saved to library');
   } catch (err) { alert('Save failed: ' + err.message); }
 }
@@ -1319,7 +1314,7 @@ function buildPalette() {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
-function init() {
+async function init() {
   canvas = document.getElementById('editor-canvas');
   ctx = canvas.getContext('2d');
 
@@ -1331,8 +1326,7 @@ function init() {
   const incomingId = window.__editorContentId || null;
   if (incomingId) {
     try {
-      const all  = JSON.parse(localStorage.getItem('hx_content') || '[]');
-      const item = all.find(i => i.id === incomingId);
+      const item = await window.hxStorage.getById(incomingId);
       if (item?.data) {
         currentContentId = incomingId;
         mapName = item.name || 'Untitled Dungeon';

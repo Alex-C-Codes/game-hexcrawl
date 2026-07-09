@@ -2,22 +2,120 @@
 (function () {
   'use strict';
 
-  // ── Biomes — matches db/seeds/geography_pillar/hex_types.json ────────────
-  const BIOMES = {
-    ocean:      { label: 'Ocean',      color: '#1a4a6e' },
-    coast:      { label: 'Coast',      color: '#3a8abf' },
-    plains:     { label: 'Plains',     color: '#7eb05a' },
-    forest:     { label: 'Forest',     color: '#2d6a4f' },
-    hills:      { label: 'Hills',      color: '#7a9c52' },
-    highland:   { label: 'Highland',   color: '#8a9e72' },
-    mountain:   { label: 'Mountain',   color: '#7a7a8a' },
-    desert:     { label: 'Desert',     color: '#c9a84c' },
-    swamp:      { label: 'Swamp',      color: '#4a6741' },
-    settlement: { label: 'Settlement', color: '#8a6030' },
-  };
+  // ── Biomes, grouped by setting — matches db/seeds/geography_pillar/hex_types.json for the Classic set ──
+  const BIOME_CATEGORIES = [
+    {
+      id: 'classic', label: 'Classic',
+      biomes: {
+        ocean:      { label: 'Ocean',      color: '#1a4a6e' },
+        coast:      { label: 'Coast',      color: '#3a8abf' },
+        plains:     { label: 'Plains',     color: '#7eb05a' },
+        grassland:  { label: 'Grassland',  color: '#9bc25c' },
+        farm:       { label: 'Farm',       color: '#b8a852' },
+        forest:     { label: 'Forest',     color: '#2d6a4f' },
+        jungle:     { label: 'Jungle',     color: '#1f5c38' },
+        mushroomforest: { label: 'Mushroom Forest', color: '#3a6a4a' },
+        worldtree:      { label: 'World Tree',      color: '#4a5a3a' },
+        hills:      { label: 'Hills',      color: '#7a9c52' },
+        highland:   { label: 'Highland',   color: '#8a9e72' },
+        mountain:   { label: 'Mountain',   color: '#7a7a8a' },
+        tundra:     { label: 'Tundra',     color: '#a8c4d4' },
+        desert:     { label: 'Desert',     color: '#c9a84c' },
+        swamp:      { label: 'Swamp',      color: '#4a6741' },
+        settlement: { label: 'Settlement', color: '#8a6030' },
+        beacon:     { label: 'Beacon',     color: '#b23a2e' },
+        fort:       { label: 'Fort',       color: '#6a6a78' },
+        tower:        { label: 'Tower',        color: '#8a8078' },
+        ancientruins: { label: 'Ruins',        color: '#7a8070' },
+        temple:       { label: 'Temple',        color: '#d4c896' },
+      },
+    },
+    {
+      id: 'undead', label: 'Undead',
+      biomes: {
+        graveyard:       { label: 'Graveyard',        color: '#5a5a52' },
+        hauntedforest:   { label: 'Haunted Forest',   color: '#2a3a30' },
+        necropolis:      { label: 'Necropolis',       color: '#8a8a92' },
+        bonefields:      { label: 'Bone Fields',      color: '#c9c0a0' },
+        cursedswamp:     { label: 'Cursed Swamp',     color: '#3a4a42' },
+        crypt:           { label: 'Crypt',            color: '#2a2a30' },
+        witheredwastes:  { label: 'Withered Wastes',  color: '#6a6050' },
+      },
+    },
+    {
+      id: 'sky', label: 'Sky Islands',
+      biomes: {
+        void:     { label: 'Void',           color: '#0d0d1f' },
+        cloudsea: { label: 'Cloud Sea',       color: '#c7d2df' },
+        skyreef:  { label: 'Sky Reef',        color: '#5c8a6f' },
+        storm:    { label: 'Storm Front',     color: '#453a5e' },
+        crystal:  { label: 'Crystal Spire',   color: '#8f6fd1' },
+        ashfall:  { label: 'Ashfall Isle',    color: '#4a3d38' },
+        ruins:    { label: 'Ruined Isle',     color: '#a99872' },
+        skydock:  { label: 'Skydock',         color: '#c98a4c' },
+        airship:        { label: 'Airship',        color: '#7a8ba0' },
+        flyingfortress: { label: 'Flying Fortress', color: '#5a5a68' },
+        crackedland:    { label: 'Cracked Land',   color: '#8a7860' },
+      },
+    },
+    {
+      id: 'wasteland', label: 'Wasteland',
+      biomes: {
+        wastes:      { label: 'Irradiated Wastes', color: '#8a8a4a' },
+        ruinfield:   { label: 'Ruined City',       color: '#5a5650' },
+        craterzone:  { label: 'Blast Crater',      color: '#3a4a2e' },
+        deadforest:  { label: 'Dead Forest',       color: '#554d40' },
+        toxicswamp:  { label: 'Toxic Sludge',      color: '#5a6b3a' },
+        dunefield:   { label: 'Ashen Dunes',       color: '#a89f88' },
+        junkyard:    { label: 'Scrapyard',         color: '#7a5236' },
+        bunker:      { label: 'Bunker Outpost',    color: '#4a5240' },
+      },
+    },
+    {
+      id: 'steampunk', label: 'Steampunk',
+      biomes: {
+        factoryland:  { label: 'Factory District', color: '#4a4038' },
+        clockwork:    { label: 'Clockwork Hills',  color: '#8a7040' },
+        railway:      { label: 'Rail Yards',       color: '#6a5a4a' },
+        aetherfield:  { label: 'Aether Fields',    color: '#5a7a9c' },
+        smogmarsh:    { label: 'Smog Marsh',       color: '#5a5a3a' },
+        slagmountain: { label: 'Slag Peaks',       color: '#6a4a42' },
+        airdock:      { label: 'Airship Yard',     color: '#b5793f' },
+        quarry:       { label: 'Coal Quarry',      color: '#3a352f' },
+      },
+    },
+    {
+      id: 'underdark', label: 'Underdark',
+      biomes: {
+        cavern:           { label: 'Cavern',           color: '#3a3038' },
+        chasm:            { label: 'Chasm',             color: '#0a0a12' },
+        fungalforest:     { label: 'Fungal Forest',     color: '#4a6b5c' },
+        undergroundlake:  { label: 'Underground Lake',  color: '#1a2a3a' },
+        crystalcave:      { label: 'Crystal Cave',      color: '#3a6a6e' },
+        lavatube:         { label: 'Lava Tube',         color: '#4a2a20' },
+        deeproad:         { label: 'Deep Road',         color: '#6a6258' },
+        drowoutpost:      { label: 'Drow Outpost',      color: '#3a2a4a' },
+      },
+    },
+  ];
 
-  const BIOME_KEYS = Object.keys(BIOMES);
-  const HEX_SIZE   = 24;
+  const BIOMES = Object.assign({}, ...BIOME_CATEGORIES.map(c => c.biomes));
+  const HEX_SIZE = 24;
+
+  // ── Route types — linear features drawn across hex centers ───────────────
+  // width/dash are in "hex units" and scale with zoom, like everything else.
+  const ROUTE_TYPES = {
+    water_river: { label: 'Water River',       color: '#3a8abf', width: 3, dash: [] },
+    lava_river:  { label: 'Lava River',        color: '#e0502a', width: 3, dash: [] },
+    toxic_river: { label: 'Toxic River',       color: '#8ac93a', width: 3, dash: [] },
+    road:        { label: 'Road',              color: '#c9a86a', width: 2, dash: [6, 3] },
+    current:     { label: 'Air/Water Current', color: '#7ec8e3', width: 2, dash: [2, 4] },
+    leyline:     { label: 'Ley Line',          color: '#a070d0', width: 2, dash: [1, 3] },
+    trade_route: { label: 'Trade Route',       color: '#e0b04c', width: 2, dash: [8, 4] },
+  };
+  // Colors are user-editable per type (see buildRoutePalette) — this is the live copy.
+  let routeTypeColors = Object.fromEntries(Object.entries(ROUTE_TYPES).map(([k, v]) => [k, v.color]));
+  let currentRouteType = Object.keys(ROUTE_TYPES)[0];
 
   // ── Hex geometry ──────────────────────────────────────────────────────────
   function hexToPixel(q, r, size) {
@@ -76,6 +174,16 @@
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.beginPath(); ctx.moveTo(3,-11); ctx.lineTo(8,-5); ctx.lineTo(-2,-5); ctx.closePath(); ctx.fill();
   }
+  function artTundra() {
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath(); ctx.arc(-5,7,7,Math.PI,0,true); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(5,8,6,Math.PI,0,true); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(150,190,210,0.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-8,-6); ctx.lineTo(-2,-2); ctx.lineTo(-6,2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(4,-8); ctx.lineTo(8,-3); ctx.lineTo(3,-1); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-1,-11); ctx.lineTo(-1,-7); ctx.moveTo(-3,-9); ctx.lineTo(1,-9); ctx.stroke();
+  }
   function artHighland() {
     ctx.fillStyle = 'rgba(255,255,255,0.17)';
     ctx.beginPath(); ctx.arc(0,9,13,Math.PI,0,true); ctx.closePath(); ctx.fill();
@@ -85,6 +193,44 @@
     ctx.beginPath(); ctx.moveTo(-6,-9); ctx.lineTo(1,5); ctx.lineTo(-13,5); ctx.closePath(); ctx.fill();
     ctx.fillStyle = 'rgba(25,105,40,0.88)';
     ctx.beginPath(); ctx.moveTo(5,-9); ctx.lineTo(13,5); ctx.lineTo(-3,5); ctx.closePath(); ctx.fill();
+  }
+  function artJungle() {
+    ctx.fillStyle = 'rgba(5,45,15,0.85)';
+    ctx.beginPath(); ctx.moveTo(-8,-8); ctx.lineTo(0,6); ctx.lineTo(-14,6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(15,80,30,0.85)';
+    ctx.beginPath(); ctx.moveTo(2,-10); ctx.lineTo(12,6); ctx.lineTo(-4,6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(40,140,55,0.9)';
+    ctx.beginPath(); ctx.moveTo(-2,-6); ctx.lineTo(5,5); ctx.lineTo(-9,5); ctx.closePath(); ctx.fill();
+  }
+  function artMushroomforest() {
+    ctx.fillStyle = 'rgba(200,60,50,0.85)';
+    ctx.beginPath(); ctx.ellipse(-5,-2,4,2.5,0,Math.PI,0); ctx.fill();
+    ctx.fillStyle = 'rgba(230,220,200,0.9)';
+    [[-6.5,-2.5],[-3.5,-2.5],[-5,-3.5]].forEach(([x,y]) => { ctx.beginPath(); ctx.arc(x,y,0.6,0,Math.PI*2); ctx.fill(); });
+    ctx.fillStyle = 'rgba(220,210,190,0.9)';
+    ctx.fillRect(-6,-2,2,5);
+    ctx.fillStyle = 'rgba(180,50,45,0.8)';
+    ctx.beginPath(); ctx.ellipse(4,-5,5.5,3.5,0,Math.PI,0); ctx.fill();
+    ctx.fillStyle = 'rgba(230,220,200,0.85)';
+    [[2,-6],[6,-6],[4,-7.5]].forEach(([x,y]) => { ctx.beginPath(); ctx.arc(x,y,0.7,0,Math.PI*2); ctx.fill(); });
+    ctx.fillStyle = 'rgba(220,210,190,0.85)';
+    ctx.fillRect(3,-5,2,7);
+  }
+  function artWorldtree() {
+    ctx.fillStyle = 'rgba(60,45,30,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(-5,10); ctx.lineTo(-4,-2); ctx.lineTo(-6,-6); ctx.lineTo(-2,-4);
+    ctx.lineTo(0,-9); ctx.lineTo(2,-4); ctx.lineTo(6,-6); ctx.lineTo(4,-2); ctx.lineTo(5,10);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(60,45,30,0.8)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-5,8); ctx.lineTo(-11,11); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(5,8); ctx.lineTo(11,11); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(0,14); ctx.stroke();
+    ctx.fillStyle = 'rgba(50,110,60,0.55)';
+    ctx.beginPath(); ctx.arc(0,-10,11,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(80,150,80,0.5)';
+    ctx.beginPath(); ctx.arc(-5,-8,7,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6,-9,6,0,Math.PI*2); ctx.fill();
   }
   function artHills() {
     ctx.fillStyle = 'rgba(255,255,255,0.22)';
@@ -96,6 +242,20 @@
     [[-5,0],[0,1],[5,0]].forEach(([xo,yo]) => {
       ctx.beginPath(); ctx.moveTo(xo,7+yo); ctx.quadraticCurveTo(xo-2,2+yo,xo,-6+yo); ctx.stroke();
     });
+  }
+  function artGrassland() {
+    ctx.strokeStyle = 'rgba(30,90,10,0.5)'; ctx.lineWidth = 1.3;
+    [[-8,2],[-4,-1],[0,2],[4,-1],[8,2]].forEach(([xo,yo]) => {
+      ctx.beginPath(); ctx.moveTo(xo,8+yo); ctx.quadraticCurveTo(xo-1,3+yo,xo+1,-5+yo); ctx.stroke();
+    });
+  }
+  function artFarm() {
+    ctx.strokeStyle = 'rgba(120,90,30,0.55)'; ctx.lineWidth = 1.3;
+    [-8,-3,2,7].forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x,9); ctx.lineTo(x+3,-9); ctx.stroke();
+    });
+    ctx.strokeStyle = 'rgba(90,65,20,0.7)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(10,0); ctx.stroke();
   }
   function artDesert() {
     ctx.strokeStyle = 'rgba(160,118,20,0.6)'; ctx.lineWidth = 1.5;
@@ -129,6 +289,440 @@
     ctx.beginPath(); ctx.moveTo(-3, 1); ctx.lineTo(0, -4); ctx.lineTo(3, 1); ctx.closePath(); ctx.fill();
     ctx.fillRect(-2.5, 1, 5, 3.5);
   }
+  function artBeacon() {
+    // Pole with a waving pennant and a lit glow at the tip
+    ctx.strokeStyle = 'rgba(70,50,35,0.9)'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(0, 9); ctx.lineTo(0, -11); ctx.stroke();
+    ctx.fillStyle = '#f5d060';
+    ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(9, -7); ctx.lineTo(0, -3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,220,140,0.9)';
+    ctx.beginPath(); ctx.arc(0, -11, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,220,140,0.35)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, -11, 5, 0, Math.PI * 2); ctx.stroke();
+  }
+  function artFort() {
+    // Dark circle with steel border, echoing Settlement's POI marker style
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fill();
+    ctx.strokeStyle = '#b0b0b8'; ctx.lineWidth = 1.5; ctx.stroke();
+    // Crenellated tower
+    ctx.fillStyle = '#b0b0b8';
+    ctx.fillRect(-3, -1, 6, 5);
+    ctx.fillRect(-3.5, -3, 2, 2.5);
+    ctx.fillRect(1.5, -3, 2, 2.5);
+  }
+  function artTower() {
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fill();
+    ctx.strokeStyle = '#c8c0b0'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#c8c0b0';
+    ctx.beginPath(); ctx.moveTo(-2.5,5); ctx.lineTo(-2,-3); ctx.lineTo(2,-3); ctx.lineTo(2.5,5); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-3,-3); ctx.lineTo(0,-8); ctx.lineTo(3,-3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(-0.7,0,1.4,2);
+  }
+  function artAncientruins() {
+    ctx.fillStyle = 'rgba(150,145,130,0.75)';
+    ctx.fillRect(-8,-2,4,10);
+    ctx.fillRect(-1,-9,4,17);
+    ctx.fillRect(5,2,4,6);
+    ctx.fillStyle = 'rgba(100,95,85,0.6)';
+    ctx.fillRect(-9,8,20,2);
+    ctx.strokeStyle = 'rgba(60,100,50,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-7,-2); ctx.quadraticCurveTo(-9,2,-6,6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-9); ctx.quadraticCurveTo(-2,-4,1,0); ctx.stroke();
+  }
+  function artTemple() {
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fill();
+    ctx.strokeStyle = '#e8dcb0'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#e8dcb0';
+    ctx.beginPath(); ctx.moveTo(-5,-2); ctx.lineTo(0,-6); ctx.lineTo(5,-2); ctx.closePath(); ctx.fill();
+    ctx.fillRect(-4,-2,1.4,5);
+    ctx.fillRect(-1,-2,1.4,5);
+    ctx.fillRect(2.6,-2,1.4,5);
+    ctx.fillRect(-5,3,10,1.3);
+  }
+
+  // ── Sky island art ──
+  function artVoid() {
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    [[-7,-6],[4,-8],[8,3],[-3,7],[0,-2],[-9,2]].forEach(([x, y]) => {
+      ctx.beginPath(); ctx.arc(x, y, 0.9, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.strokeStyle = 'rgba(120,110,200,0.35)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, 0, 9, 0.4, 3.6); ctx.stroke();
+  }
+  function artCloudsea() {
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    [[-7,2,6],[-1,-2,7],[6,2,6],[1,5,5]].forEach(([x, y, rad]) => {
+      ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+  function artSkyreef() {
+    ctx.fillStyle = 'rgba(90,70,55,0.85)';
+    ctx.beginPath(); ctx.moveTo(-8,-2); ctx.lineTo(-2,-9); ctx.lineTo(6,-4); ctx.lineTo(8,4); ctx.lineTo(-6,6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(90,150,90,0.7)';
+    ctx.beginPath(); ctx.arc(-2,-6,3.5,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,9); ctx.lineTo(0,13); ctx.stroke();
+  }
+  function artStorm() {
+    ctx.fillStyle = 'rgba(20,15,35,0.6)';
+    ctx.beginPath(); ctx.arc(-4,-4,7,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(5,-2,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#f5d060';
+    ctx.beginPath();
+    ctx.moveTo(1,-3); ctx.lineTo(-3,4); ctx.lineTo(0,4); ctx.lineTo(-2,10); ctx.lineTo(4,2); ctx.lineTo(1,2); ctx.closePath();
+    ctx.fill();
+  }
+  function artCrystal() {
+    ctx.fillStyle = 'rgba(160,120,220,0.55)';
+    ctx.beginPath(); ctx.moveTo(-2,-11); ctx.lineTo(2,-2); ctx.lineTo(-6,-2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(120,200,220,0.6)';
+    ctx.beginPath(); ctx.moveTo(5,-8); ctx.lineTo(8,2); ctx.lineTo(1,1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(180,140,230,0.7)';
+    ctx.beginPath(); ctx.moveTo(-8,-4); ctx.lineTo(-4,6); ctx.lineTo(-11,4); ctx.closePath(); ctx.fill();
+  }
+  function artAshfall() {
+    ctx.fillStyle = 'rgba(40,32,30,0.85)';
+    ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(9,6); ctx.lineTo(-9,6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,110,40,0.85)';
+    ctx.beginPath(); ctx.arc(0,-8,2.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(90,85,85,0.5)';
+    ctx.beginPath(); ctx.arc(3,-11,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-2,-13,2.4,0,Math.PI*2); ctx.fill();
+  }
+  function artRuins() {
+    ctx.fillStyle = 'rgba(200,190,165,0.75)';
+    ctx.fillRect(-8,-2,4,9);
+    ctx.fillRect(-1,-8,4,15);
+    ctx.fillRect(5,1,4,6);
+    ctx.fillStyle = 'rgba(140,130,110,0.6)';
+    ctx.fillRect(-9,7,20,2);
+  }
+  function artSkydock() {
+    ctx.strokeStyle = 'rgba(120,90,50,0.8)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-9,4); ctx.lineTo(9,4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-6,4); ctx.lineTo(-6,8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6,4); ctx.lineTo(6,8); ctx.stroke();
+    ctx.strokeStyle = 'rgba(220,200,160,0.9)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0,4); ctx.lineTo(0,-9); ctx.stroke();
+    ctx.fillStyle = '#c9a84c';
+    ctx.beginPath(); ctx.moveTo(0,-9); ctx.lineTo(7,-6); ctx.lineTo(0,-3); ctx.closePath(); ctx.fill();
+  }
+  function artAirship() {
+    ctx.fillStyle = 'rgba(200,170,120,0.85)';
+    ctx.beginPath(); ctx.ellipse(0,-3,11,5,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,90,60,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-6,-7); ctx.lineTo(-6,1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-8); ctx.lineTo(0,2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6,-7); ctx.lineTo(6,1); ctx.stroke();
+    ctx.fillStyle = 'rgba(60,50,40,0.9)';
+    ctx.fillRect(-5,3,10,3.5);
+    ctx.strokeStyle = 'rgba(60,50,40,0.7)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-5,4); ctx.lineTo(-7,2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(5,4); ctx.lineTo(7,2); ctx.stroke();
+  }
+  function artFlyingfortress() {
+    ctx.fillStyle = 'rgba(70,65,60,0.85)';
+    ctx.beginPath(); ctx.moveTo(-10,4); ctx.lineTo(-6,9); ctx.lineTo(8,9); ctx.lineTo(10,3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(90,88,95,0.9)';
+    ctx.fillRect(-8,-3,16,7);
+    ctx.fillRect(-9,-8,4,6);
+    ctx.fillRect(5,-8,4,6);
+    ctx.fillRect(-2,-10,4,8);
+    ctx.fillStyle = 'rgba(40,38,42,0.7)';
+    ctx.fillRect(-9,-8,1.3,1.3);
+    ctx.fillRect(-6.5,-8,1.3,1.3);
+    ctx.fillRect(5,-8,1.3,1.3);
+    ctx.fillRect(7.5,-8,1.3,1.3);
+  }
+  function artCrackedland() {
+    ctx.strokeStyle = 'rgba(40,30,20,0.75)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(-9,-8); ctx.lineTo(-2,-1); ctx.lineTo(-5,5); ctx.lineTo(0,9); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6,-9); ctx.lineTo(1,-2); ctx.lineTo(7,3); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,140,60,0.5)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-2,-1); ctx.lineTo(1,-2); ctx.stroke();
+    ctx.fillStyle = 'rgba(90,75,55,0.7)';
+    ctx.beginPath(); ctx.moveTo(2,10); ctx.lineTo(6,11); ctx.lineTo(4,14); ctx.closePath(); ctx.fill();
+  }
+
+  // ── Wasteland art ──
+  function artWastes() {
+    ctx.strokeStyle = 'rgba(40,35,10,0.6)'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(-9,-7); ctx.lineTo(-2,-1); ctx.lineTo(-6,6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(2,-8); ctx.lineTo(-2,-1); ctx.lineTo(6,3); ctx.lineTo(3,9); ctx.stroke();
+    ctx.fillStyle = 'rgba(180,200,40,0.55)';
+    ctx.beginPath(); ctx.arc(-2,-1,2,0,Math.PI*2); ctx.fill();
+  }
+  function artRuinfield() {
+    ctx.fillStyle = 'rgba(40,38,35,0.8)';
+    ctx.beginPath(); ctx.moveTo(-9,7); ctx.lineTo(-9,-6); ctx.lineTo(-6,-9); ctx.lineTo(-4,-3); ctx.lineTo(-2,7); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0,7); ctx.lineTo(0,-2); ctx.lineTo(4,-8); ctx.lineTo(6,1); ctx.lineTo(8,7); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,140,40,0.4)';
+    ctx.beginPath(); ctx.arc(-6,-4,1.2,0,Math.PI*2); ctx.fill();
+  }
+  function artCraterzone() {
+    ctx.strokeStyle = 'rgba(60,60,50,0.6)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(0,2,10,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,2,6,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle = 'rgba(140,220,90,0.55)';
+    ctx.beginPath(); ctx.arc(0,2,3,0,Math.PI*2); ctx.fill();
+  }
+  function artDeadforest() {
+    ctx.strokeStyle = 'rgba(50,42,32,0.8)'; ctx.lineWidth = 1.4;
+    [-6,1,7].forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x,9); ctx.lineTo(x-1,-6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x-1,-2); ctx.lineTo(x-5,-6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x-1,-4); ctx.lineTo(x+4,-8); ctx.stroke();
+    });
+  }
+  function artToxicswamp() {
+    ctx.fillStyle = 'rgba(120,160,40,0.5)';
+    ctx.beginPath(); ctx.ellipse(0,6,10,3,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(160,210,60,0.65)';
+    [[-4,0,1.6],[3,-3,1.2],[-1,-6,1]].forEach(([x,y,rad]) => {
+      ctx.beginPath(); ctx.arc(x,y,rad,0,Math.PI*2); ctx.fill();
+    });
+  }
+  function artDunefield() {
+    ctx.strokeStyle = 'rgba(120,112,95,0.55)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(-10,-2); ctx.quadraticCurveTo(-5,-8,0,-2); ctx.quadraticCurveTo(5,4,10,-2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-9,5); ctx.quadraticCurveTo(-2,-1,5,5); ctx.stroke();
+  }
+  function artJunkyard() {
+    ctx.fillStyle = 'rgba(120,70,40,0.7)';
+    ctx.beginPath(); ctx.moveTo(-8,7); ctx.lineTo(-6,-3); ctx.lineTo(-1,0); ctx.lineTo(-3,7); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(90,90,95,0.7)';
+    ctx.beginPath(); ctx.moveTo(0,7); ctx.lineTo(3,-6); ctx.lineTo(8,-1); ctx.lineTo(6,7); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(50,45,40,0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-8,-1); ctx.lineTo(2,-4); ctx.stroke();
+  }
+  function artBunker() {
+    ctx.fillStyle = 'rgba(60,64,55,0.85)';
+    ctx.beginPath(); ctx.arc(0,4,9,Math.PI,0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(20,18,15,0.85)';
+    ctx.beginPath(); ctx.arc(0,4,2.4,Math.PI,0); ctx.fill();
+    ctx.strokeStyle = 'rgba(150,150,140,0.8)'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(6,-5); ctx.lineTo(6,-11); ctx.stroke();
+    ctx.fillStyle = 'rgba(220,60,50,0.8)';
+    ctx.beginPath(); ctx.arc(6,-11,1.3,0,Math.PI*2); ctx.fill();
+  }
+
+  // ── Steampunk / arcanepunk / dieselpunk art ──
+  function artFactoryland() {
+    ctx.fillStyle = 'rgba(80,50,40,0.85)';
+    ctx.fillRect(-8,-2,3,11);
+    ctx.fillRect(-1,-6,3,15);
+    ctx.fillRect(5,0,3,9);
+    ctx.fillStyle = 'rgba(150,150,150,0.5)';
+    ctx.beginPath(); ctx.arc(0,-9,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(2,-13,2.4,0,Math.PI*2); ctx.fill();
+  }
+  function artClockwork() {
+    ctx.strokeStyle = 'rgba(200,160,70,0.8)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle = 'rgba(200,160,70,0.8)';
+    for (let i = 0; i < 8; i++) {
+      ctx.save(); ctx.rotate(Math.PI / 4 * i); ctx.fillRect(-1,-9,2,3); ctx.restore();
+    }
+    ctx.beginPath(); ctx.arc(0,0,2,0,Math.PI*2); ctx.fill();
+  }
+  function artRailway() {
+    ctx.strokeStyle = 'rgba(90,80,70,0.8)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(-8,8); ctx.lineTo(-3,-9); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(8,8); ctx.lineTo(3,-9); ctx.stroke();
+    ctx.strokeStyle = 'rgba(60,50,40,0.7)'; ctx.lineWidth = 1.2;
+    [[-6,6,6],[-5,0,5],[-4,-5,4]].forEach(([x1,y,x2]) => {
+      ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke();
+    });
+  }
+  function artAetherfield() {
+    ctx.strokeStyle = 'rgba(140,120,255,0.4)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-7,3); ctx.quadraticCurveTo(0,-8,7,2); ctx.stroke();
+    ctx.fillStyle = 'rgba(120,200,255,0.8)';
+    [[-7,3],[0,-6],[7,2],[-2,6]].forEach(([x,y]) => {
+      ctx.beginPath(); ctx.arc(x,y,1.6,0,Math.PI*2); ctx.fill();
+    });
+  }
+  function artSmogmarsh() {
+    ctx.fillStyle = 'rgba(90,100,60,0.5)';
+    ctx.beginPath(); ctx.ellipse(0,6,10,3,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(70,65,60,0.55)';
+    ctx.beginPath(); ctx.arc(-3,-3,6,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4,-1,5,0,Math.PI*2); ctx.fill();
+  }
+  function artSlagmountain() {
+    ctx.fillStyle = 'rgba(70,45,40,0.8)';
+    ctx.beginPath(); ctx.moveTo(-5,-5); ctx.lineTo(4,6); ctx.lineTo(-14,6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(60,40,38,0.85)';
+    ctx.beginPath(); ctx.moveTo(3,-11); ctx.lineTo(13,6); ctx.lineTo(-7,6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,120,40,0.85)';
+    ctx.beginPath(); ctx.moveTo(3,-11); ctx.lineTo(6,-4); ctx.lineTo(0,-4); ctx.closePath(); ctx.fill();
+  }
+  function artAirdock() {
+    ctx.strokeStyle = 'rgba(120,90,50,0.8)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(0,10); ctx.lineTo(0,-2); ctx.stroke();
+    ctx.fillStyle = 'rgba(180,140,80,0.75)';
+    ctx.beginPath(); ctx.ellipse(2,-7,8,4,0.15,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(90,70,50,0.85)';
+    ctx.fillRect(0,-3,4,2.5);
+    ctx.strokeStyle = 'rgba(90,70,50,0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-2,-4); ctx.lineTo(-3,-2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6,-4); ctx.lineTo(7,-2); ctx.stroke();
+  }
+  function artQuarry() {
+    ctx.strokeStyle = 'rgba(20,18,16,0.7)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(0,2,10,Math.PI*0.15,Math.PI*0.85); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,3,6,Math.PI*0.1,Math.PI*0.9); ctx.stroke();
+    ctx.fillStyle = 'rgba(10,10,10,0.6)';
+    ctx.beginPath(); ctx.ellipse(0,6,4,2,0,0,Math.PI*2); ctx.fill();
+  }
+
+  // ── Underdark art ──
+  function artCavern() {
+    ctx.fillStyle = 'rgba(70,64,70,0.75)';
+    [[-8,-12],[0,-13],[7,-11]].forEach(([x, y]) => {
+      ctx.beginPath(); ctx.moveTo(x-2,y); ctx.lineTo(x+2,y); ctx.lineTo(x,y+8); ctx.closePath(); ctx.fill();
+    });
+    ctx.fillStyle = 'rgba(50,45,50,0.75)';
+    [[-5,12],[4,13]].forEach(([x, y]) => {
+      ctx.beginPath(); ctx.moveTo(x-2,y); ctx.lineTo(x+2,y); ctx.lineTo(x,y-8); ctx.closePath(); ctx.fill();
+    });
+  }
+  function artChasm() {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.beginPath();
+    ctx.moveTo(-9,-6); ctx.lineTo(-2,-2); ctx.lineTo(-6,3); ctx.lineTo(0,8);
+    ctx.lineTo(6,2); ctx.lineTo(2,-4); ctx.lineTo(9,-7); ctx.lineTo(3,0);
+    ctx.closePath(); ctx.fill();
+  }
+  function artFungalforest() {
+    ctx.strokeStyle = 'rgba(200,180,220,0.6)'; ctx.lineWidth = 1.4;
+    [[-6,8],[6,8],[0,9]].forEach(([x, y]) => { ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-6); ctx.stroke(); });
+    ctx.fillStyle = 'rgba(140,90,160,0.75)';
+    ctx.beginPath(); ctx.ellipse(-6,1,5,3,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(6,1,5,3,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(180,140,200,0.8)';
+    ctx.beginPath(); ctx.ellipse(0,2,6,3.5,0,0,Math.PI*2); ctx.fill();
+  }
+  function artUndergroundlake() {
+    ctx.strokeStyle = 'rgba(80,130,190,0.35)'; ctx.lineWidth = 1.3;
+    [-5,1,7].forEach(y => {
+      ctx.beginPath(); ctx.moveTo(-9,y); ctx.quadraticCurveTo(-4,y-3,0,y); ctx.quadraticCurveTo(4,y+3,9,y); ctx.stroke();
+    });
+  }
+  function artCrystalcave() {
+    ctx.fillStyle = 'rgba(80,200,210,0.55)';
+    ctx.beginPath(); ctx.moveTo(-2,-10); ctx.lineTo(2,-1); ctx.lineTo(-6,-1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(60,170,190,0.6)';
+    ctx.beginPath(); ctx.moveTo(5,-7); ctx.lineTo(8,3); ctx.lineTo(1,2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(100,220,220,0.7)';
+    ctx.beginPath(); ctx.moveTo(-8,-3); ctx.lineTo(-4,7); ctx.lineTo(-11,5); ctx.closePath(); ctx.fill();
+  }
+  function artLavatube() {
+    ctx.fillStyle = 'rgba(30,20,18,0.8)';
+    ctx.beginPath(); ctx.arc(0,10,11,Math.PI,0,true); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,90,30,0.85)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(-7,4); ctx.lineTo(-2,7); ctx.lineTo(2,3); ctx.lineTo(7,6); ctx.stroke();
+  }
+  function artDeeproad() {
+    ctx.strokeStyle = 'rgba(150,144,130,0.6)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(-9,7); ctx.lineTo(9,-7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(100,94,84,0.5)'; ctx.lineWidth = 1.2;
+    [[-4,4],[1,-1],[6,-6]].forEach(([x, y]) => {
+      ctx.beginPath(); ctx.moveTo(x-2,y+2); ctx.lineTo(x+2,y-2); ctx.stroke();
+    });
+  }
+  function artDrowoutpost() {
+    ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2);
+    ctx.fillStyle = 'rgba(20,10,30,0.85)'; ctx.fill();
+    ctx.strokeStyle = '#a070d0'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#a070d0';
+    ctx.beginPath(); ctx.moveTo(0,-6); ctx.lineTo(2,1); ctx.lineTo(-2,1); ctx.closePath(); ctx.fill();
+    ctx.fillRect(-1,1,2,4);
+  }
+
+  // ── Undead art ──
+  function artGraveyard() {
+    ctx.fillStyle = 'rgba(160,160,155,0.75)';
+    [[-7,2],[0,0],[6,3]].forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.moveTo(x-2,y+6); ctx.lineTo(x-2,y-1);
+      ctx.arc(x,y-1,2,Math.PI,0,true);
+      ctx.lineTo(x+2,y+6);
+      ctx.closePath(); ctx.fill();
+    });
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-7,-3); ctx.lineTo(-7,0); ctx.moveTo(-8,-1); ctx.lineTo(-6,-1); ctx.stroke();
+  }
+  function artHauntedforest() {
+    ctx.strokeStyle = 'rgba(30,25,25,0.85)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(0,9); ctx.quadraticCurveTo(-3,0,-1,-8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-1,-3); ctx.lineTo(-7,-7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-1,-5); ctx.lineTo(4,-9); ctx.stroke();
+    ctx.fillStyle = 'rgba(140,220,140,0.55)';
+    ctx.beginPath(); ctx.arc(5,-2,2.2,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(140,220,140,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(5,-2,5,0,Math.PI*2); ctx.stroke();
+  }
+  function artNecropolis() {
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.78)'; ctx.fill();
+    ctx.strokeStyle = '#9098a0'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#9098a0';
+    ctx.beginPath(); ctx.moveTo(-3,1); ctx.lineTo(0,-4); ctx.lineTo(3,1); ctx.closePath(); ctx.fill();
+    ctx.fillRect(-3,1,6,3.5);
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.beginPath(); ctx.arc(0,-1,1,0,Math.PI*2); ctx.fill();
+  }
+  function artBonefields() {
+    ctx.strokeStyle = 'rgba(90,85,70,0.7)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(-8,3); ctx.lineTo(-2,1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(2,-3); ctx.lineTo(8,-5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-3,6); ctx.quadraticCurveTo(0,2,3,6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-2,5); ctx.quadraticCurveTo(0,3,2,5); ctx.stroke();
+    ctx.fillStyle = 'rgba(210,200,175,0.8)';
+    ctx.beginPath(); ctx.arc(-4,-4,3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(30,25,20,0.8)';
+    ctx.beginPath(); ctx.arc(-5,-4.5,0.7,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-3,-4.5,0.7,0,Math.PI*2); ctx.fill();
+  }
+  function artCursedswamp() {
+    ctx.strokeStyle = 'rgba(20,30,20,0.75)'; ctx.lineWidth = 1.4;
+    [-6,0,6].forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x,8); ctx.lineTo(x,-2); ctx.stroke();
+    });
+    ctx.fillStyle = 'rgba(140,100,200,0.4)';
+    ctx.beginPath(); ctx.arc(2,-5,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-4,-7,2,0,Math.PI*2); ctx.fill();
+  }
+  function artCrypt() {
+    ctx.fillStyle = 'rgba(50,48,52,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(-6,8); ctx.lineTo(-6,-2);
+    ctx.arc(0,-2,6,Math.PI,0,true);
+    ctx.lineTo(6,8);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(-3,8); ctx.lineTo(-3,-1);
+    ctx.arc(0,-1,3,Math.PI,0,true);
+    ctx.lineTo(3,8);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(140,220,140,0.4)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,6); ctx.lineTo(0,2); ctx.stroke();
+  }
+  function artWitheredwastes() {
+    ctx.strokeStyle = 'rgba(60,55,40,0.6)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-8,4); ctx.lineTo(-2,0); ctx.lineTo(-6,-6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(3,6); ctx.lineTo(7,1); ctx.lineTo(4,-4); ctx.stroke();
+    ctx.strokeStyle = 'rgba(40,38,30,0.8)'; ctx.lineWidth = 1;
+    [-4,2,7].forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x,8); ctx.lineTo(x-1,4); ctx.moveTo(x,8); ctx.lineTo(x+1,4); ctx.stroke();
+    });
+  }
 
   function drawBiomeArt(cx, cy, size, biome) {
     ctx.save();
@@ -138,15 +732,68 @@
     ctx.scale(size / 24, size / 24);
     switch (biome) {
       case 'mountain': artMountain(); break;
+      case 'tundra':   artTundra();   break;
       case 'highland': artHighland(); break;
       case 'forest':   artForest();   break;
       case 'hills':    artHills();    break;
       case 'plains':   artPlains();   break;
+      case 'grassland': artGrassland(); break;
+      case 'farm':     artFarm();      break;
+      case 'jungle':   artJungle();   break;
+      case 'mushroomforest': artMushroomforest(); break;
+      case 'worldtree':      artWorldtree();      break;
       case 'desert':   artDesert();   break;
       case 'swamp':    artSwamp();    break;
       case 'ocean':    artOcean();    break;
       case 'coast':      artCoast();      break;
       case 'settlement': artSettlement(); break;
+      case 'beacon':     artBeacon();     break;
+      case 'fort':       artFort();       break;
+      case 'tower':        artTower();        break;
+      case 'ancientruins': artAncientruins(); break;
+      case 'temple':       artTemple();       break;
+      case 'void':      artVoid();      break;
+      case 'cloudsea':  artCloudsea();  break;
+      case 'skyreef':   artSkyreef();   break;
+      case 'storm':     artStorm();     break;
+      case 'crystal':   artCrystal();   break;
+      case 'ashfall':   artAshfall();   break;
+      case 'ruins':     artRuins();     break;
+      case 'skydock':   artSkydock();   break;
+      case 'airship':        artAirship();        break;
+      case 'flyingfortress': artFlyingfortress(); break;
+      case 'crackedland':    artCrackedland();    break;
+      case 'wastes':       artWastes();       break;
+      case 'ruinfield':    artRuinfield();    break;
+      case 'craterzone':   artCraterzone();   break;
+      case 'deadforest':   artDeadforest();   break;
+      case 'toxicswamp':   artToxicswamp();   break;
+      case 'dunefield':    artDunefield();    break;
+      case 'junkyard':     artJunkyard();     break;
+      case 'bunker':       artBunker();       break;
+      case 'factoryland':  artFactoryland();  break;
+      case 'clockwork':    artClockwork();    break;
+      case 'railway':      artRailway();      break;
+      case 'aetherfield':  artAetherfield();  break;
+      case 'smogmarsh':    artSmogmarsh();    break;
+      case 'slagmountain': artSlagmountain(); break;
+      case 'airdock':      artAirdock();      break;
+      case 'quarry':       artQuarry();       break;
+      case 'cavern':          artCavern();          break;
+      case 'chasm':           artChasm();           break;
+      case 'fungalforest':    artFungalforest();    break;
+      case 'undergroundlake': artUndergroundlake(); break;
+      case 'crystalcave':     artCrystalcave();     break;
+      case 'lavatube':        artLavatube();        break;
+      case 'deeproad':        artDeeproad();        break;
+      case 'drowoutpost':     artDrowoutpost();     break;
+      case 'graveyard':      artGraveyard();      break;
+      case 'hauntedforest':  artHauntedforest();  break;
+      case 'necropolis':     artNecropolis();     break;
+      case 'bonefields':     artBonefields();     break;
+      case 'cursedswamp':    artCursedswamp();    break;
+      case 'crypt':          artCrypt();          break;
+      case 'witheredwastes': artWitheredwastes(); break;
     }
     ctx.restore();
   }
@@ -163,20 +810,159 @@
   }
 
   // ── State ─────────────────────────────────────────────────────────────────
-  // Sparse infinite grid: only painted hexes exist in the map
-  let grid = new Map(); // "q,r" → biome string
+  // User-defined, freely reorderable layers sharing the same (q,r) coordinate
+  // space — e.g. "Sky Islands" above, "Realm" at ground level, "Underdark" below.
+  function createLayer(name) {
+    return {
+      id: crypto.randomUUID(),
+      name,
+      grid: new Map(),        // "q,r" → biome string
+      hexArticles: new Map(), // "q,r" → { id, name }
+      routes: [],              // [{ id, type, points: [{q,r}, ...] }]
+      undoStack: [],
+      redoStack: [],
+    };
+  }
+
+  let layers = [createLayer('Sky Islands'), createLayer('Realm'), createLayer('Underdark')];
+  let currentLayerIdx = 1; // "Realm" active by default
+  function L() { return layers[currentLayerIdx]; }
+
+  function notifyLayersChanged() {
+    window.__hexmapOnLayersChanged?.(layers.map(l => ({ id: l.id, name: l.name })), currentLayerIdx);
+  }
+
+  function switchLayer(idx) {
+    if (idx < 0 || idx >= layers.length || idx === currentLayerIdx) return;
+    currentLayerIdx = idx;
+    updateToolbar();
+    updateStatus(hoverHex?.q ?? 0, hoverHex?.r ?? 0);
+    scheduleRender();
+    notifyLayersChanged();
+    window.__hexmapOnLinksChanged?.();
+  }
+
+  function addLayer() {
+    const layer = createLayer(`Layer ${layers.length + 1}`);
+    layers.splice(currentLayerIdx + 1, 0, layer);
+    currentLayerIdx = currentLayerIdx + 1;
+    scheduleRender();
+    notifyLayersChanged();
+    window.__hexmapOnLinksChanged?.();
+  }
+
+  function deleteLayer(idx) {
+    if (layers.length <= 1 || idx < 0 || idx >= layers.length) return;
+    layers.splice(idx, 1);
+    currentLayerIdx = Math.min(currentLayerIdx, layers.length - 1);
+    scheduleRender();
+    notifyLayersChanged();
+    window.__hexmapOnLinksChanged?.();
+  }
+
+  function renameLayer(idx, name) {
+    if (!layers[idx] || !name) return;
+    layers[idx].name = name;
+    notifyLayersChanged();
+  }
+
+  function reorderLayer(fromIdx, toIdx) {
+    if (fromIdx === toIdx || !layers[fromIdx] || !layers[toIdx]) return;
+    const activeId = layers[currentLayerIdx].id;
+    const [moved] = layers.splice(fromIdx, 1);
+    layers.splice(toIdx, 0, moved);
+    currentLayerIdx = layers.findIndex(l => l.id === activeId);
+    notifyLayersChanged();
+  }
+
+  // ── Ghost layers — faint onion-skin preview of the layer above/below ─────
+  let showGhostAbove = false, showGhostBelow = false;
+
+  function notifyGhostChanged() {
+    window.__hexmapOnGhostChanged?.(showGhostAbove, showGhostBelow);
+  }
+
+  function toggleGhostAbove() {
+    showGhostAbove = !showGhostAbove;
+    scheduleRender();
+    notifyGhostChanged();
+  }
+
+  function toggleGhostBelow() {
+    showGhostBelow = !showGhostBelow;
+    scheduleRender();
+    notifyGhostChanged();
+  }
+
   let currentBiome = 'plains';
   let currentTool  = 'paint';
   let currentContentId = null;
 
+  // Radius tool: click a hex to paint a ring (or filled disk) of a given
+  // radius around it, all in currentBiome.
+  let radiusToolValue = 3;
+  let radiusToolMode = 'ring'; // 'ring' | 'fill'
+
+  function offsetToAxial(q, r) {
+    return { aq: q - (r - (r & 1)) / 2, ar: r };
+  }
+  function axialToOffset(aq, ar) {
+    return { q: aq + (ar - (ar & 1)) / 2, r: ar };
+  }
+
+  function hexRing(centerAq, centerAr, radius) {
+    if (radius <= 0) return [{ aq: centerAq, ar: centerAr }];
+    const dirs = [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+    const results = [];
+    let aq = centerAq + dirs[4][0] * radius;
+    let ar = centerAr + dirs[4][1] * radius;
+    for (let i = 0; i < 6; i++) {
+      for (let j = 0; j < radius; j++) {
+        results.push({ aq, ar });
+        aq += dirs[i][0];
+        ar += dirs[i][1];
+      }
+    }
+    return results;
+  }
+
+  function hexDisk(centerAq, centerAr, radius) {
+    const results = [];
+    for (let dq = -radius; dq <= radius; dq++) {
+      for (let dr = Math.max(-radius, -dq - radius); dr <= Math.min(radius, -dq + radius); dr++) {
+        results.push({ aq: centerAq + dq, ar: centerAr + dr });
+      }
+    }
+    return results;
+  }
+
+  function applyRadiusTool(centerQ, centerR) {
+    const { aq, ar } = offsetToAxial(centerQ, centerR);
+    const cells = radiusToolMode === 'fill'
+      ? hexDisk(aq, ar, radiusToolValue)
+      : hexRing(aq, ar, radiusToolValue);
+    const before = snapshot();
+    for (const c of cells) {
+      const { q, r } = axialToOffset(c.aq, c.ar);
+      L().grid.set(key(q, r), currentBiome);
+    }
+    pushUndo(before);
+    scheduleRender();
+  }
+
   let ox = 0, oy = 0, scale = 1;
   let isPainting = false, isPanning = false;
   let panStart = null;
-  let undoStack = [], redoStack = [];
   let pendingSnapshot = null;
   let spaceDown = false;
   let spacePanLast = null; // last mouse pos during no-click space-pan
-  let hexArticles = new Map(); // "q,r" → { id, name }
+
+  // Route drawing: drag through hexes to lay a path; a plain click (no drag)
+  // on an existing route's hex deletes that route instead.
+  let isDrawingRoute = false;
+  let routeDidDrag = false;
+  let pendingRoutePoints = [];
+  let routeEraseCandidate = null;
 
   // Center-pick mode: set by React when user clicks "Pick on map"
   let pickCenterCb = null;
@@ -184,37 +970,72 @@
   let canvas, ctx, wrap;
   let rafId = null;
 
-  // ── Undo / redo ───────────────────────────────────────────────────────────
-  function snapshot() { return new Map(grid); }
+  // ── Undo / redo (per layer) ─────────────────────────────────────────────────
+  // A snapshot captures both the tile grid and the routes drawn on this layer.
+  function snapshot() {
+    return {
+      grid: new Map(L().grid),
+      routes: L().routes.map(r => ({ ...r, points: [...r.points] })),
+    };
+  }
 
   function pushUndo(before) {
-    undoStack.push(before);
-    if (undoStack.length > 80) undoStack.shift();
-    redoStack = [];
+    L().undoStack.push(before);
+    if (L().undoStack.length > 80) L().undoStack.shift();
+    L().redoStack = [];
   }
 
   function undo() {
-    if (!undoStack.length) return;
-    redoStack.push(snapshot());
-    grid = undoStack.pop();
+    if (!L().undoStack.length) return;
+    L().redoStack.push(snapshot());
+    const prev = L().undoStack.pop();
+    L().grid = prev.grid;
+    L().routes = prev.routes;
     scheduleRender();
   }
 
   function redo() {
-    if (!redoStack.length) return;
-    undoStack.push(snapshot());
-    grid = redoStack.pop();
+    if (!L().redoStack.length) return;
+    L().undoStack.push(snapshot());
+    const next = L().redoStack.pop();
+    L().grid = next.grid;
+    L().routes = next.routes;
     scheduleRender();
   }
 
   // ── Grid helpers ──────────────────────────────────────────────────────────
   function key(q, r) { return q + ',' + r; }
 
+  // ── Routes ────────────────────────────────────────────────────────────────
+  function findRouteAt(q, r) {
+    return L().routes.find(route => route.points.some(p => p.q === q && p.r === r)) || null;
+  }
+
+  function drawRoute(route, size, cxOff, cyOff) {
+    if (!route.points || route.points.length < 2) return;
+    const def = ROUTE_TYPES[route.type];
+    if (!def) return;
+    ctx.save();
+    ctx.strokeStyle = routeTypeColors[route.type] ?? def.color;
+    ctx.lineWidth = Math.max(1, def.width * scale);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.setLineDash((def.dash || []).map(d => d * scale));
+    ctx.beginPath();
+    route.points.forEach((p, i) => {
+      const { x, y } = hexToPixel(p.q, p.r, size);
+      const sx = x + cxOff, sy = y + cyOff;
+      if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    });
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // ── Flood fill (only spreads to existing hexes) ───────────────────────────
   function floodFill(startQ, startR) {
     const startKey = key(startQ, startR);
-    if (!grid.has(startKey)) return;
-    const origBiome = grid.get(startKey);
+    if (!L().grid.has(startKey)) return;
+    const origBiome = L().grid.get(startKey);
     if (origBiome === currentBiome) return;
 
     const before = snapshot();
@@ -223,10 +1044,10 @@
 
     while (queue.length) {
       const { q, r } = queue.pop();
-      grid.set(key(q, r), currentBiome);
+      L().grid.set(key(q, r), currentBiome);
       for (const nb of neighbors(q, r)) {
         const nk = key(nb.q, nb.r);
-        if (!visited.has(nk) && grid.has(nk) && grid.get(nk) === origBiome) {
+        if (!visited.has(nk) && L().grid.has(nk) && L().grid.get(nk) === origBiome) {
           visited.add(nk);
           queue.push(nb);
         }
@@ -268,6 +1089,22 @@
     ctx.stroke();
   }
 
+  // Draw another layer's tiles faintly, underneath/above the active layer —
+  // an onion-skin reference so you can align hexes across layers without switching.
+  function renderGhostLayer(layer, size, cxOff, cyOff, margin, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    for (const [k, biome] of layer.grid) {
+      const [q, r] = k.split(',').map(Number);
+      const { x, y } = hexToPixel(q, r, size);
+      const sx = x + cxOff, sy = y + cyOff;
+      if (sx < -margin || sx > canvas.width  + margin) continue;
+      if (sy < -margin || sy > canvas.height + margin) continue;
+      drawHex(sx, sy, size - 0.5, biome);
+    }
+    ctx.restore();
+  }
+
   function drawArticleIndicator(cx, cy, size) {
     const r  = Math.max(6, size * 0.22);
     const ix = cx + size * 0.38;
@@ -296,7 +1133,15 @@
 
     renderGrid(size, cxOff, cyOff);
 
-    for (const [k, biome] of grid) {
+    // Ghost layers below the active one — drawn first so they sit underneath
+    if (showGhostBelow) {
+      for (let i = currentLayerIdx + 1; i < layers.length; i++) {
+        const dist = i - currentLayerIdx;
+        renderGhostLayer(layers[i], size, cxOff, cyOff, margin, Math.max(0.05, 0.17 / dist));
+      }
+    }
+
+    for (const [k, biome] of L().grid) {
       const [q, r] = k.split(',').map(Number);
       const { x, y } = hexToPixel(q, r, size);
       const sx = x + cxOff, sy = y + cyOff;
@@ -305,8 +1150,24 @@
       drawHex(sx, sy, size - 0.5, biome);
     }
 
+    // Ghost layers above the active one — drawn after so they float on top
+    if (showGhostAbove) {
+      for (let i = currentLayerIdx - 1; i >= 0; i--) {
+        const dist = currentLayerIdx - i;
+        renderGhostLayer(layers[i], size, cxOff, cyOff, margin, Math.max(0.05, 0.17 / dist));
+      }
+    }
+
+    // Routes (rivers, roads, ley lines, ...) drawn on top of terrain
+    for (const route of L().routes) {
+      drawRoute(route, size, cxOff, cyOff);
+    }
+    if (isDrawingRoute && pendingRoutePoints.length >= 2) {
+      drawRoute({ type: currentRouteType, points: pendingRoutePoints }, size, cxOff, cyOff);
+    }
+
     // Draw article-link badges on linked hexes
-    for (const [k] of hexArticles) {
+    for (const [k] of L().hexArticles) {
       const [q, r] = k.split(',').map(Number);
       const { x, y } = hexToPixel(q, r, size);
       const sx = x + cxOff, sy = y + cyOff;
@@ -344,10 +1205,10 @@
 
   // ── Fit view to grid bounds ───────────────────────────────────────────────
   function fitView() {
-    if (!grid.size) { ox = 0; oy = 0; scale = 1; scheduleRender(); return; }
+    if (!L().grid.size) { ox = 0; oy = 0; scale = 1; scheduleRender(); return; }
 
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const k of grid.keys()) {
+    for (const k of L().grid.keys()) {
       const [q, r] = k.split(',').map(Number);
       const { x, y } = hexToPixel(q, r, HEX_SIZE);
       if (x < minX) minX = x; if (x > maxX) maxX = x;
@@ -373,79 +1234,91 @@
   // ── Tools ─────────────────────────────────────────────────────────────────
   function applyTool(q, r) {
     if (currentTool === 'paint') {
-      grid.set(key(q, r), currentBiome);
+      L().grid.set(key(q, r), currentBiome);
     } else if (currentTool === 'erase') {
-      grid.delete(key(q, r));
+      L().grid.delete(key(q, r));
+      const hitRoute = findRouteAt(q, r);
+      if (hitRoute) L().routes = L().routes.filter(rt => rt.id !== hitRoute.id);
     } else if (currentTool === 'pick') {
-      const b = grid.get(key(q, r));
+      const b = L().grid.get(key(q, r));
       if (b) { currentBiome = b; updatePalette(); updateSelectedInfo(); }
     }
     scheduleRender();
   }
 
   // ── Save / load ───────────────────────────────────────────────────────────
-  function gridToArray() {
+  function gridToArray(layer) {
     const result = [];
-    for (const [k, biome] of grid) {
+    for (const [k, biome] of layer.grid) {
       const [q, r] = k.split(',').map(Number);
       result.push({ q, r, biome });
     }
     return result;
   }
 
-  function arrayToGrid(arr) {
-    grid = new Map();
+  function arrayToGrid(layer, arr) {
+    const g = new Map();
     for (const { q, r, biome } of arr) {
-      grid.set(key(q, r), biome);
+      g.set(key(q, r), biome);
     }
+    layer.grid = g;
   }
 
   function mergeHexes(arr) {
     for (const { q, r, biome } of arr) {
-      grid.set(key(q, r), biome);
+      L().grid.set(key(q, r), biome);
     }
   }
 
-  function hexArticlesToArray() {
+  function hexArticlesToArray(layer) {
     const result = [];
-    for (const [k, article] of hexArticles) {
+    for (const [k, article] of layer.hexArticles) {
       const [q, r] = k.split(',').map(Number);
       result.push({ q, r, id: article.id, name: article.name });
     }
     return result;
   }
 
-  function arrayToHexArticles(arr) {
-    hexArticles = new Map();
+  function arrayToHexArticles(layer, arr) {
+    const m = new Map();
     for (const { q, r, id, name } of (arr || [])) {
-      hexArticles.set(key(q, r), { id, name });
+      m.set(key(q, r), { id, name });
     }
+    layer.hexArticles = m;
   }
 
   function getMapName() {
     return document.getElementById('hx-input-name')?.value || 'Untitled Hex Map';
   }
 
-  function saveToLibrary() {
-    const all = JSON.parse(localStorage.getItem('hx_content') || '[]');
-    const now  = new Date().toISOString();
-    const id   = currentContentId || crypto.randomUUID();
+  function layersToSaveData() {
+    return layers.map(l => ({
+      id: l.id,
+      name: l.name,
+      hexes: gridToArray(l),
+      hexArticles: hexArticlesToArray(l),
+      routes: l.routes,
+    }));
+  }
+
+  async function saveToLibrary() {
+    const id = currentContentId || crypto.randomUUID();
     currentContentId = id;
-    const record = {
-      id, type: 'hexmap', name: getMapName(),
-      data: { hexes: gridToArray(), hexArticles: hexArticlesToArray() },
-      updatedAt: now,
-      createdAt: all.find(i => i.id === id)?.createdAt ?? now,
-    };
-    const idx = all.findIndex(i => i.id === id);
-    if (idx >= 0) all[idx] = record; else all.unshift(record);
-    localStorage.setItem('hx_content', JSON.stringify(all));
-    showToast('Saved to library!');
+    try {
+      await window.hxStorage.upsert({
+        id, type: 'hexmap', name: getMapName(),
+        data: { layers: layersToSaveData(), activeLayer: currentLayerIdx, routeColors: routeTypeColors },
+      });
+      showToast('Saved to library!');
+    } catch (e) {
+      console.error('hexmap save error', e);
+      alert('Save failed: ' + e.message);
+    }
   }
 
   function exportJson() {
     const blob = new Blob(
-      [JSON.stringify({ name: getMapName(), hexes: gridToArray(), hexArticles: hexArticlesToArray() }, null, 2)],
+      [JSON.stringify({ name: getMapName(), layers: layersToSaveData(), activeLayer: currentLayerIdx, routeColors: routeTypeColors }, null, 2)],
       { type: 'application/json' }
     );
     const a = document.createElement('a');
@@ -454,18 +1327,97 @@
     a.click();
   }
 
-  function loadContent(id) {
+  // ── PDF export — renders only the drawn hexes, cropped tightly around them ──
+  // Returns one { name, dataUrl, width, height } PNG per non-empty layer, each
+  // tightly cropped to just that layer's own painted hexes and routes — same
+  // padding convention as fitView(), so only what you've actually drawn is exported.
+  function buildExportPages(mimeType = 'image/png') {
+    const EXPORT_SIZE = 42; // fixed print resolution, independent of on-screen zoom
+    const pad = EXPORT_SIZE * 2;
+
+    // Only the currently-active layer — not the whole map.
+    const layer = L();
+    if (!layer.grid.size && !layer.routes.length) return [];
+
+    // drawHex/drawRoute paint onto the shared module-level `canvas`/`ctx`/`scale` —
+    // redirect them at an offscreen canvas for the duration of the export, then restore.
+    const savedCanvas = canvas, savedCtx = ctx, savedScale = scale;
+    scale = EXPORT_SIZE / HEX_SIZE;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const k of layer.grid.keys()) {
+      const [q, r] = k.split(',').map(Number);
+      const { x, y } = hexToPixel(q, r, EXPORT_SIZE);
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    for (const route of layer.routes) {
+      for (const p of route.points) {
+        const { x, y } = hexToPixel(p.q, p.r, EXPORT_SIZE);
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+    }
+    minX -= pad; maxX += pad; minY -= pad; maxY += pad;
+    const width  = Math.ceil(maxX - minX);
+    const height = Math.ceil(maxY - minY);
+    const cxOff  = -minX, cyOff = -minY;
+
+    const off = document.createElement('canvas');
+    off.width = width;
+    off.height = height;
+    canvas = off;
+    ctx = off.getContext('2d');
+
+    ctx.fillStyle = '#080706';
+    ctx.fillRect(0, 0, width, height);
+
+    for (const [k, biome] of layer.grid) {
+      const [q, r] = k.split(',').map(Number);
+      const { x, y } = hexToPixel(q, r, EXPORT_SIZE);
+      drawHex(x + cxOff, y + cyOff, EXPORT_SIZE - 0.5, biome);
+    }
+    for (const route of layer.routes) {
+      drawRoute(route, EXPORT_SIZE, cxOff, cyOff);
+    }
+
+    const page = { name: layer.name, dataUrl: off.toDataURL(mimeType, 0.92), width, height };
+
+    canvas = savedCanvas;
+    ctx = savedCtx;
+    scale = savedScale;
+    return [page];
+  }
+
+  async function loadContent(id) {
     try {
-      const all  = JSON.parse(localStorage.getItem('hx_content') || '[]');
-      const item = all.find(i => i.id === id);
+      const item = await window.hxStorage.getById(id);
       if (!item) return;
       const nameEl = document.getElementById('hx-input-name');
       if (nameEl) nameEl.value = item.name || 'Untitled Hex Map';
-      if (item.data?.hexes) {
-        arrayToGrid(item.data.hexes);
-        arrayToHexArticles(item.data.hexArticles);
+      if (item.data?.routeColors) {
+        routeTypeColors = { ...routeTypeColors, ...item.data.routeColors };
+      }
+      if (Array.isArray(item.data?.layers) && item.data.layers.length) {
+        layers = item.data.layers.map(rec => {
+          const l = createLayer(rec.name || 'Layer');
+          if (rec.id) l.id = rec.id;
+          arrayToGrid(l, rec.hexes || []);
+          arrayToHexArticles(l, rec.hexArticles || []);
+          l.routes = rec.routes || [];
+          return l;
+        });
+        currentLayerIdx = Math.min(Math.max(item.data.activeLayer ?? 0, 0), layers.length - 1);
+        scheduleRender();
+      } else if (item.data?.hexes) {
+        // Legacy single-layer format (pre-layers) → migrate into a single "Realm" layer
+        layers = [createLayer('Realm')];
+        arrayToGrid(layers[0], item.data.hexes);
+        arrayToHexArticles(layers[0], item.data.hexArticles || []);
+        currentLayerIdx = 0;
         scheduleRender();
       }
+      notifyLayersChanged();
     } catch (e) { console.error('hexmap load error', e); }
   }
 
@@ -483,24 +1435,31 @@
     const el = document.getElementById('hx-palette');
     if (!el) return;
     el.innerHTML = '';
-    for (const bk of BIOME_KEYS) {
-      const b    = BIOMES[bk];
-      const item = document.createElement('div');
-      item.className  = 'hx-pal-item' + (bk === currentBiome ? ' selected' : '');
-      item.dataset.biome = bk;
-      const swatch = document.createElement('span');
-      swatch.className = 'hx-pal-swatch';
-      swatch.style.background = b.color;
-      item.appendChild(swatch);
-      item.appendChild(document.createTextNode(b.label));
-      item.addEventListener('click', () => {
-        currentBiome = bk;
-        currentTool  = 'paint';
-        updatePalette();
-        updateSelectedInfo();
-        updateToolbar();
-      });
-      el.appendChild(item);
+    for (const cat of BIOME_CATEGORIES) {
+      const heading = document.createElement('div');
+      heading.className = 'hx-pal-group-label';
+      heading.textContent = cat.label;
+      el.appendChild(heading);
+
+      for (const bk of Object.keys(cat.biomes)) {
+        const b    = cat.biomes[bk];
+        const item = document.createElement('div');
+        item.className  = 'hx-pal-item' + (bk === currentBiome ? ' selected' : '');
+        item.dataset.biome = bk;
+        const swatch = document.createElement('span');
+        swatch.className = 'hx-pal-swatch';
+        swatch.style.background = b.color;
+        item.appendChild(swatch);
+        item.appendChild(document.createTextNode(b.label));
+        item.addEventListener('click', () => {
+          currentBiome = bk;
+          currentTool  = 'paint';
+          updatePalette();
+          updateSelectedInfo();
+          updateToolbar();
+        });
+        el.appendChild(item);
+      }
     }
   }
 
@@ -510,9 +1469,67 @@
     });
   }
 
+  // ── Route palette ─────────────────────────────────────────────────────────
+  function buildRoutePalette() {
+    const el = document.getElementById('hx-route-palette');
+    if (!el) return;
+    el.innerHTML = '';
+    for (const rk of Object.keys(ROUTE_TYPES)) {
+      const def  = ROUTE_TYPES[rk];
+      const item = document.createElement('div');
+      item.className = 'hx-pal-item' + (rk === currentRouteType && currentTool === 'route' ? ' selected' : '');
+      item.dataset.route = rk;
+
+      const swatch = document.createElement('input');
+      swatch.type = 'color';
+      swatch.className = 'hx-route-swatch';
+      swatch.value = routeTypeColors[rk];
+      swatch.title = 'Change color';
+      swatch.addEventListener('click', e => e.stopPropagation());
+      swatch.addEventListener('input', e => {
+        routeTypeColors[rk] = e.target.value;
+        if (rk === currentRouteType) updateSelectedInfo();
+        scheduleRender();
+      });
+
+      const label = document.createElement('span');
+      label.textContent = def.label;
+      label.style.flex = '1';
+
+      const lineSample = document.createElement('span');
+      lineSample.className = 'hx-route-linesample';
+      lineSample.style.borderTopColor = routeTypeColors[rk];
+      if (def.dash && def.dash.length) lineSample.style.borderTopStyle = 'dashed';
+
+      item.appendChild(swatch);
+      item.appendChild(label);
+      item.appendChild(lineSample);
+      item.addEventListener('click', () => {
+        currentRouteType = rk;
+        currentTool = 'route';
+        updateRoutePalette();
+        updateSelectedInfo();
+        updateToolbar();
+      });
+      el.appendChild(item);
+    }
+  }
+
+  function updateRoutePalette() {
+    document.querySelectorAll('#hx-route-palette .hx-pal-item').forEach(el => {
+      el.classList.toggle('selected', el.dataset.route === currentRouteType && currentTool === 'route');
+    });
+  }
+
   function updateSelectedInfo() {
     const swatch = document.getElementById('hx-selected-tile-swatch');
     const name   = document.getElementById('hx-selected-tile-name');
+    if (currentTool === 'route') {
+      const def = ROUTE_TYPES[currentRouteType];
+      if (swatch) swatch.style.background = routeTypeColors[currentRouteType] ?? def?.color ?? '#111';
+      if (name)   name.textContent = def?.label ?? currentRouteType;
+      return;
+    }
     if (swatch) swatch.style.background = BIOMES[currentBiome]?.color ?? '#111';
     if (name)   name.textContent = BIOMES[currentBiome]?.label ?? currentBiome;
   }
@@ -524,14 +1541,19 @@
   }
 
   function updateStatus(q, r) {
-    const hasTile = grid.has(key(q, r));
-    const article = hexArticles.get(key(q, r));
+    const hasTile = L().grid.has(key(q, r));
+    const route   = findRouteAt(q, r);
+    const article = L().hexArticles.get(key(q, r));
     const posEl   = document.getElementById('hx-status-pos');
     const tileEl  = document.getElementById('hx-status-tile');
     const artEl   = document.getElementById('hx-status-article');
     const toolEl  = document.getElementById('hx-status-tool');
     if (posEl)  posEl.textContent  = `(${q}, ${r})`;
-    if (tileEl) tileEl.textContent = hasTile ? (BIOMES[grid.get(key(q, r))]?.label ?? '') : '';
+    if (tileEl) {
+      const tileLabel  = hasTile ? (BIOMES[L().grid.get(key(q, r))]?.label ?? '') : '';
+      const routeLabel = route ? (ROUTE_TYPES[route.type]?.label ?? '') : '';
+      tileEl.textContent = [tileLabel, routeLabel].filter(Boolean).join(' · ');
+    }
     if (artEl)  artEl.textContent  = article ? `· ${article.name}` : '';
     if (toolEl) toolEl.textContent = pickCenterCb ? 'Click a hex to set center'
       : spaceDown ? 'Tool: pan (space)' : 'Tool: ' + currentTool;
@@ -579,7 +1601,7 @@
     if (!raw || !target) { scheduleRender(); return; }
     try {
       const { id, name } = JSON.parse(raw);
-      hexArticles.set(key(target.q, target.r), { id, name });
+      L().hexArticles.set(key(target.q, target.r), { id, name });
       scheduleRender();
       window.__hexmapOnLinksChanged?.();
     } catch { scheduleRender(); }
@@ -642,6 +1664,22 @@
       return;
     }
 
+    if (currentTool === 'radius') {
+      applyRadiusTool(q, r);
+      updateStatus(q, r);
+      return;
+    }
+
+    if (currentTool === 'route') {
+      routeEraseCandidate = findRouteAt(q, r);
+      isDrawingRoute = true;
+      routeDidDrag = false;
+      pendingRoutePoints = [{ q, r }];
+      updateStatus(q, r);
+      scheduleRender();
+      return;
+    }
+
     pendingSnapshot = snapshot();
     isPainting = true;
     applyTool(q, r);
@@ -653,11 +1691,18 @@
     const { q, r } = hexFromEvent(e);
     // Notify React when the hovered hex changes (for the article hover card)
     if (!hoverHex || hoverHex.q !== q || hoverHex.r !== r) {
-      window.__hexmapOnHexHover?.(q, r, hexArticles.get(key(q, r)) || null);
+      window.__hexmapOnHexHover?.(q, r, L().hexArticles.get(key(q, r)) || null);
     }
     hoverHex = { q, r };
     updateStatus(q, r);
     if (isPainting) applyTool(q, r);
+    if (isDrawingRoute) {
+      const last = pendingRoutePoints[pendingRoutePoints.length - 1];
+      if (!last || last.q !== q || last.r !== r) {
+        pendingRoutePoints.push({ q, r });
+        routeDidDrag = true;
+      }
+    }
     scheduleRender();
   }
 
@@ -665,6 +1710,22 @@
     if (isPainting && pendingSnapshot) {
       pushUndo(pendingSnapshot);
       pendingSnapshot = null;
+    }
+    if (isDrawingRoute) {
+      if (!routeDidDrag && routeEraseCandidate) {
+        const before = snapshot();
+        L().routes = L().routes.filter(r => r.id !== routeEraseCandidate.id);
+        pushUndo(before);
+      } else if (pendingRoutePoints.length >= 2) {
+        const before = snapshot();
+        L().routes.push({ id: crypto.randomUUID(), type: currentRouteType, points: pendingRoutePoints });
+        pushUndo(before);
+      }
+      isDrawingRoute = false;
+      pendingRoutePoints = [];
+      routeEraseCandidate = null;
+      if (hoverHex) updateStatus(hoverHex.q, hoverHex.r);
+      scheduleRender();
     }
     isPainting = false;
     isPanning  = false;
@@ -709,9 +1770,9 @@
       scheduleRender();
       return;
     }
-    const toolMap = { b: 'paint', e: 'erase', f: 'fill', p: 'pick', h: 'pan' };
+    const toolMap = { b: 'paint', e: 'erase', f: 'fill', p: 'pick', h: 'pan', r: 'route' };
     const tool = toolMap[e.key.toLowerCase()];
-    if (tool) { currentTool = tool; updateToolbar(); updateCursor(); return; }
+    if (tool) { currentTool = tool; updateToolbar(); updateSelectedInfo(); updateCursor(); return; }
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
     if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
   }
@@ -727,7 +1788,7 @@
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
-  function init() {
+  async function init() {
     canvas = document.getElementById('hx-canvas');
     wrap   = document.getElementById('hx-canvas-wrap');
     if (!canvas || !wrap) return;
@@ -735,13 +1796,14 @@
 
     const incomingId = window.__hexmapContentId || null;
     currentContentId = incomingId;
-    if (incomingId) loadContent(incomingId);
-
-    // Seed new maps with the 7-hex flower (center + 6 neighbors)
-    if (!grid.size) {
+    if (incomingId) {
+      await loadContent(incomingId);
+    } else {
+      // Brand-new map: seed the active (Realm) layer with the 7-hex flower
       [[0,0],[1,0],[-1,0],[0,-1],[-1,-1],[0,1],[-1,1]]
-        .forEach(([q, r]) => grid.set(key(q, r), 'plains'));
+        .forEach(([q, r]) => L().grid.set(key(q, r), 'plains'));
     }
+    notifyLayersChanged();
 
     const ro = new ResizeObserver(resizeCanvas);
     ro.observe(wrap);
@@ -770,7 +1832,7 @@
 
     document.querySelectorAll('#hx-toolbar .hx-tool-btn').forEach(btn => {
       if (!btn.dataset.tool) return;
-      btn.addEventListener('click', () => { currentTool = btn.dataset.tool; updateToolbar(); });
+      btn.addEventListener('click', () => { currentTool = btn.dataset.tool; updateToolbar(); updateSelectedInfo(); });
     });
 
     document.getElementById('btn-hx-undo')?.addEventListener('click', undo);
@@ -780,6 +1842,7 @@
     document.getElementById('btn-hx-fit')?.addEventListener('click', fitView);
 
     buildPalette();
+    buildRoutePalette();
     updateSelectedInfo();
     updateToolbar();
 
@@ -808,7 +1871,7 @@
     };
 
     window.hexmapGetAllLinks = function () {
-      return hexArticlesToArray();
+      return hexArticlesToArray(L());
     };
 
     window.hexmapGetHexScreenPos = function (q, r) {
@@ -821,10 +1884,38 @@
     };
 
     window.hexmapUnlinkArticle = function (q, r) {
-      hexArticles.delete(key(q, r));
+      L().hexArticles.delete(key(q, r));
       scheduleRender();
       window.__hexmapOnLinksChanged?.();
     };
+
+    window.hexmapExportPdfPages = buildExportPages;
+    window.hexmapExportImages   = buildExportPages;
+
+    window.hexmapSetRadiusValue = function (n) {
+      radiusToolValue = Math.max(0, Math.min(30, Number(n) || 0));
+    };
+    window.hexmapSetRadiusMode = function (mode) {
+      radiusToolMode = mode === 'fill' ? 'fill' : 'ring';
+    };
+    window.hexmapShowToast = showToast;
+
+    // ── Layers ────────────────────────────────────────────────────────────
+    window.hexmapGetLayers = function () {
+      return layers.map(l => ({ id: l.id, name: l.name }));
+    };
+
+    window.hexmapGetActiveLayerIndex = function () {
+      return currentLayerIdx;
+    };
+
+    window.hexmapSwitchLayer   = switchLayer;
+    window.hexmapAddLayer      = addLayer;
+    window.hexmapDeleteLayer   = deleteLayer;
+    window.hexmapRenameLayer   = renameLayer;
+    window.hexmapReorderLayer  = reorderLayer;
+    window.hexmapToggleGhostAbove = toggleGhostAbove;
+    window.hexmapToggleGhostBelow = toggleGhostBelow;
 
     window.cleanupHexmap = function () {
       document.removeEventListener('keydown', onKeyDown);
@@ -837,14 +1928,30 @@
       canvas.removeEventListener('dragleave', onDragLeave);
       canvas.removeEventListener('drop',      onDrop);
       window.__hexmapOnLinksChanged = null;
+      window.__hexmapOnLayersChanged = null;
+      window.__hexmapOnGhostChanged = null;
       if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-      window.hexmapLoadHexes        = null;
-      window.hexmapStartPickCenter  = null;
-      window.hexmapCancelPickCenter = null;
-      window.hexmapGetAllLinks      = null;
-      window.hexmapUnlinkArticle    = null;
-      window.hexmapGetHexScreenPos  = null;
-      window.__hexmapOnHexHover     = null;
+      window.hexmapLoadHexes         = null;
+      window.hexmapStartPickCenter   = null;
+      window.hexmapCancelPickCenter  = null;
+      window.hexmapGetAllLinks       = null;
+      window.hexmapUnlinkArticle     = null;
+      window.hexmapGetHexScreenPos   = null;
+      window.hexmapExportPdfPages    = null;
+      window.hexmapExportImages      = null;
+      window.hexmapSetRadiusValue    = null;
+      window.hexmapSetRadiusMode     = null;
+      window.hexmapShowToast         = null;
+      window.hexmapGetLayers         = null;
+      window.hexmapGetActiveLayerIndex = null;
+      window.hexmapSwitchLayer       = null;
+      window.hexmapAddLayer          = null;
+      window.hexmapDeleteLayer       = null;
+      window.hexmapRenameLayer       = null;
+      window.hexmapReorderLayer      = null;
+      window.hexmapToggleGhostAbove  = null;
+      window.hexmapToggleGhostBelow  = null;
+      window.__hexmapOnHexHover      = null;
     };
   }
 

@@ -30,11 +30,11 @@ export default function Voxel3DPage() {
     editorRef.current = ed;
 
     if (contentId) {
-      const saved = getById(contentId);
-      if (saved) {
+      getById(contentId).then(saved => {
+        if (!saved) return;
         if (nameRef.current) nameRef.current.value = saved.name || 'Untitled Map';
         ed.fromJSON(saved.data || {});
-      }
+      });
     }
 
     const onKey = e => {
@@ -73,11 +73,11 @@ export default function Voxel3DPage() {
     editorRef.current?.setPaintY(y);
   }
 
-  function handleSave() {
+  async function handleSave() {
     const ed = editorRef.current;
     if (!ed) return;
     const name = nameRef.current?.value.trim() || 'Untitled Map';
-    upsert({
+    await upsert({
       id:   contentId || crypto.randomUUID(),
       type: 'voxel3d',
       name,

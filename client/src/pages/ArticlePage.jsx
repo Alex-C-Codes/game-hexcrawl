@@ -36,21 +36,23 @@ export default function ArticlePage() {
   // Load existing article on mount
   useEffect(() => {
     if (!contentId) return;
-    const item = getById(contentId);
-    if (!item) return;
-    setTitle(item.name || 'Untitled Article');
-    if (editorRef.current && item.data?.html) {
-      editorRef.current.innerHTML = item.data.html;
-      setWords(wordCount(editorRef.current));
-    }
+    (async () => {
+      const item = await getById(contentId);
+      if (!item) return;
+      setTitle(item.name || 'Untitled Article');
+      if (editorRef.current && item.data?.html) {
+        editorRef.current.innerHTML = item.data.html;
+        setWords(wordCount(editorRef.current));
+      }
+    })();
   }, [contentId]);
 
-  function save() {
+  async function save() {
     const editor = editorRef.current;
     if (!editor) return;
     const id = savedId.current || crypto.randomUUID();
     savedId.current = id;
-    upsert({ id, type: 'article', name: title, data: { html: editor.innerHTML, text: editor.innerText } });
+    await upsert({ id, type: 'article', name: title, data: { html: editor.innerHTML, text: editor.innerText } });
     setSaved(true);
   }
 

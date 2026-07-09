@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../lib/AuthContext';
 
 const NAV_LINKS = [
   { to: '/',        label: 'Play'    },
@@ -8,6 +9,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const { pathname } = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <nav style={{
@@ -24,7 +26,7 @@ export default function Navbar() {
       <div style={{ color: '#c9a84c', fontFamily: 'Georgia, serif', fontSize: '1rem', letterSpacing: '0.15em' }}>
         Hexcrawl
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         {NAV_LINKS.map(({ to, label }) => {
           const active = pathname === to || (to !== '/' && pathname.startsWith(to));
           return (
@@ -43,6 +45,25 @@ export default function Navbar() {
             </Link>
           );
         })}
+        {user ? (
+          <>
+            <span style={{ color: '#4a4540', fontSize: '0.72rem', marginLeft: 4 }}>{user.email}</span>
+            <button onClick={signOut} style={{
+              background: 'transparent', border: '1px solid #3a3a50', borderRadius: 4,
+              color: '#6a6050', fontFamily: 'Georgia, serif', fontSize: '0.78rem',
+              padding: '4px 12px', cursor: 'pointer',
+            }}>
+              Log out
+            </button>
+          </>
+        ) : (
+          <Link to="/login" style={{
+            color: '#6a6050', border: '1px solid #3a3a50', borderRadius: 4,
+            padding: '4px 12px', textDecoration: 'none', fontSize: '0.8rem', fontFamily: 'Georgia, serif',
+          }}>
+            Log in
+          </Link>
+        )}
       </div>
     </nav>
   );
