@@ -9,7 +9,7 @@ import HexmapEditorPage       from './pages/HexmapEditorPage';
 import Voxel3DPage            from './pages/Voxel3DPage';
 import SettlementPage         from './pages/SettlementPage';
 import LoginPage              from './pages/LoginPage';
-import Navbar                 from './components/Navbar';
+import Navbar                 from './components/NavBar';
 import ProtectedRoute         from './components/ProtectedRoute';
 import { AuthProvider }       from './lib/AuthContext';
 
