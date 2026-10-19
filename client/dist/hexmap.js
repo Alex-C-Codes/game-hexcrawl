@@ -46,7 +46,7 @@
       id: 'sky', label: 'Sky Islands',
       biomes: {
         void:     { label: 'Void',           color: '#0d0d1f' },
-        cloudsea: { label: 'Cloud Sea',       color: '#c7d2df' },
+        cloudsea: { label: 'Cloud Sea',       color: '#8ec9ee' },
         skyreef:  { label: 'Sky Reef',        color: '#5c8a6f' },
         storm:    { label: 'Storm Front',     color: '#453a5e' },
         crystal:  { label: 'Crystal Spire',   color: '#8f6fd1' },
@@ -101,6 +101,12 @@
 
   const BIOMES = Object.assign({}, ...BIOME_CATEGORIES.map(c => c.biomes));
   const HEX_SIZE = 24;
+
+  // ── Linkable content types — articles & battlemaps dragged onto a hex ────
+  const LINK_TYPES = {
+    article:   { badge: 'A', color: '#c9a84c' },
+    battlemap: { badge: 'B', color: '#b05a4a' },
+  };
 
   // ── Route types — linear features drawn across hex centers ───────────────
   // width/dash are in "hex units" and scale with zoom, like everything else.
@@ -816,8 +822,8 @@
     return {
       id: crypto.randomUUID(),
       name,
-      grid: new Map(),        // "q,r" → biome string
-      hexArticles: new Map(), // "q,r" → { id, name }
+      grid: new Map(),     // "q,r" → biome string
+      hexLinks: new Map(), // "q,r" → [{ id, name, type }, ...]
       routes: [],              // [{ id, type, points: [{q,r}, ...] }]
       undoStack: [],
       redoStack: [],
@@ -1105,19 +1111,33 @@
     ctx.restore();
   }
 
-  function drawArticleIndicator(cx, cy, size) {
+  // Returns the on-screen badge positions for a hex's links, in draw order —
+  // shared by rendering and click hit-testing so they never drift apart.
+  function linkBadgePositions(cx, cy, size, count) {
     const r  = Math.max(6, size * 0.22);
-    const ix = cx + size * 0.38;
-    const iy = cy - size * 0.48;
-    ctx.save();
-    ctx.beginPath(); ctx.arc(ix, iy, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(8,6,4,0.92)'; ctx.fill();
-    ctx.strokeStyle = '#c9a84c'; ctx.lineWidth = Math.max(1.2, r * 0.25); ctx.stroke();
-    ctx.fillStyle = '#c9a84c';
-    ctx.font = `bold ${Math.round(r * 1.2)}px Georgia, serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('A', ix, iy + r * 0.07);
-    ctx.restore();
+    const gap = r * 1.9;
+    const out = [];
+    for (let i = 0; i < count; i++) {
+      out.push({ x: cx + size * 0.38 + i * gap, y: cy - size * 0.48, r });
+    }
+    return out;
+  }
+
+  function drawLinkIndicators(cx, cy, size, links) {
+    const positions = linkBadgePositions(cx, cy, size, links.length);
+    links.forEach((link, i) => {
+      const { x: ix, y: iy, r } = positions[i];
+      const def = LINK_TYPES[link.type] || LINK_TYPES.article;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(ix, iy, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(8,6,4,0.92)'; ctx.fill();
+      ctx.strokeStyle = def.color; ctx.lineWidth = Math.max(1.2, r * 0.25); ctx.stroke();
+      ctx.fillStyle = def.color;
+      ctx.font = `bold ${Math.round(r * 1.2)}px Georgia, serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(def.badge, ix, iy + r * 0.07);
+      ctx.restore();
+    });
   }
 
   function render() {
@@ -1166,14 +1186,15 @@
       drawRoute({ type: currentRouteType, points: pendingRoutePoints }, size, cxOff, cyOff);
     }
 
-    // Draw article-link badges on linked hexes
-    for (const [k] of L().hexArticles) {
+    // Draw content-link badges on linked hexes
+    for (const [k, links] of L().hexLinks) {
+      if (!links.length) continue;
       const [q, r] = k.split(',').map(Number);
       const { x, y } = hexToPixel(q, r, size);
       const sx = x + cxOff, sy = y + cyOff;
       if (sx < -margin || sx > canvas.width  + margin) continue;
       if (sy < -margin || sy > canvas.height + margin) continue;
-      drawArticleIndicator(sx, sy, size);
+      drawLinkIndicators(sx, sy, size, links);
     }
 
     if (hoverHex) {
@@ -1270,21 +1291,28 @@
     }
   }
 
-  function hexArticlesToArray(layer) {
+  function hexLinksToArray(layer) {
     const result = [];
-    for (const [k, article] of layer.hexArticles) {
+    for (const [k, links] of layer.hexLinks) {
       const [q, r] = k.split(',').map(Number);
-      result.push({ q, r, id: article.id, name: article.name });
+      for (const link of links) {
+        result.push({ q, r, id: link.id, name: link.name, type: link.type });
+      }
     }
     return result;
   }
 
-  function arrayToHexArticles(layer, arr) {
+  // Accepts either the current flat link array ({q,r,id,name,type}, one row
+  // per link) or the legacy pre-multi-link shape (one article per hex, no
+  // `type`) and rebuilds the "q,r" → [links] map either way.
+  function arrayToHexLinks(layer, arr) {
     const m = new Map();
-    for (const { q, r, id, name } of (arr || [])) {
-      m.set(key(q, r), { id, name });
+    for (const { q, r, id, name, type } of (arr || [])) {
+      const k = key(q, r);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push({ id, name, type: type || 'article' });
     }
-    layer.hexArticles = m;
+    layer.hexLinks = m;
   }
 
   function getMapName() {
@@ -1296,7 +1324,7 @@
       id: l.id,
       name: l.name,
       hexes: gridToArray(l),
-      hexArticles: hexArticlesToArray(l),
+      hexLinks: hexLinksToArray(l),
       routes: l.routes,
     }));
   }
@@ -1403,7 +1431,7 @@
           const l = createLayer(rec.name || 'Layer');
           if (rec.id) l.id = rec.id;
           arrayToGrid(l, rec.hexes || []);
-          arrayToHexArticles(l, rec.hexArticles || []);
+          arrayToHexLinks(l, rec.hexLinks || rec.hexArticles || []);
           l.routes = rec.routes || [];
           return l;
         });
@@ -1413,7 +1441,7 @@
         // Legacy single-layer format (pre-layers) → migrate into a single "Realm" layer
         layers = [createLayer('Realm')];
         arrayToGrid(layers[0], item.data.hexes);
-        arrayToHexArticles(layers[0], item.data.hexArticles || []);
+        arrayToHexLinks(layers[0], item.data.hexLinks || item.data.hexArticles || []);
         currentLayerIdx = 0;
         scheduleRender();
       }
@@ -1543,7 +1571,7 @@
   function updateStatus(q, r) {
     const hasTile = L().grid.has(key(q, r));
     const route   = findRouteAt(q, r);
-    const article = L().hexArticles.get(key(q, r));
+    const links   = L().hexLinks.get(key(q, r)) || [];
     const posEl   = document.getElementById('hx-status-pos');
     const tileEl  = document.getElementById('hx-status-tile');
     const artEl   = document.getElementById('hx-status-article');
@@ -1554,7 +1582,7 @@
       const routeLabel = route ? (ROUTE_TYPES[route.type]?.label ?? '') : '';
       tileEl.textContent = [tileLabel, routeLabel].filter(Boolean).join(' · ');
     }
-    if (artEl)  artEl.textContent  = article ? `· ${article.name}` : '';
+    if (artEl)  artEl.textContent  = links.length ? `· ${links.map(l => l.name).join(', ')}` : '';
     if (toolEl) toolEl.textContent = pickCenterCb ? 'Click a hex to set center'
       : spaceDown ? 'Tool: pan (space)' : 'Tool: ' + currentTool;
   }
@@ -1575,7 +1603,7 @@
 
   function onDragOver(e) {
     const types = Array.from(e.dataTransfer.types);
-    if (!types.includes('application/hexmap-article')) return;
+    if (!types.includes('application/hexmap-link')) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'link';
     const { q, r } = hexFromEvent(e);
@@ -1594,14 +1622,19 @@
 
   function onDrop(e) {
     e.preventDefault();
-    const raw = e.dataTransfer.getData('application/hexmap-article');
+    const raw = e.dataTransfer.getData('application/hexmap-link');
     const target = dragTargetHex;
     dragTargetHex = null;
     hoverHex = null;
     if (!raw || !target) { scheduleRender(); return; }
     try {
-      const { id, name } = JSON.parse(raw);
-      L().hexArticles.set(key(target.q, target.r), { id, name });
+      const { id, name, type } = JSON.parse(raw);
+      const k = key(target.q, target.r);
+      const existing = L().hexLinks.get(k) || [];
+      // Dropping the same item onto a hex it's already linked to is a no-op, not a duplicate
+      if (!existing.some(l => l.id === id && l.type === type)) {
+        L().hexLinks.set(k, [...existing, { id, name, type }]);
+      }
       scheduleRender();
       window.__hexmapOnLinksChanged?.();
     } catch { scheduleRender(); }
@@ -1634,6 +1667,26 @@
     return pixelToHex(e.clientX - rect.left, e.clientY - rect.top, cxOff, cyOff, size);
   }
 
+  // Did this click land on one of a hex's link badges? Checked against the
+  // same positions drawLinkIndicators used, so hit area always matches what's drawn.
+  function badgeHitAt(e, q, r) {
+    const links = L().hexLinks.get(key(q, r)) || [];
+    if (!links.length) return null;
+    const size  = HEX_SIZE * scale;
+    const cxOff = canvas.width  / 2 + ox;
+    const cyOff = canvas.height / 2 + oy;
+    const { x, y } = hexToPixel(q, r, size);
+    const rect = canvas.getBoundingClientRect();
+    const sx = rect.left + x + cxOff, sy = rect.top + y + cyOff;
+    const positions = linkBadgePositions(sx, sy, size, links.length);
+    for (let i = 0; i < positions.length; i++) {
+      const { x: ix, y: iy, r: br } = positions[i];
+      const dx = e.clientX - ix, dy = e.clientY - iy;
+      if (dx * dx + dy * dy <= br * br) return links[i];
+    }
+    return null;
+  }
+
   function onMouseDown(e) {
     // Middle-click, right-click, or pan-tool left-click → click-drag pan
     if (e.button === 1 || e.button === 2 ||
@@ -1655,6 +1708,14 @@
       pickCenterCb = null;
       updateCursor();
       scheduleRender();
+      return;
+    }
+
+    // Clicking a link badge opens that content instead of painting —
+    // checked before any tool so it works no matter which tool is active.
+    const hitLink = badgeHitAt(e, q, r);
+    if (hitLink) {
+      window.__hexmapOnLinkClick?.(hitLink, q, r);
       return;
     }
 
@@ -1689,9 +1750,9 @@
   function onMouseMove(e) {
     if (isPanning) return; // handled globally by onPanMove
     const { q, r } = hexFromEvent(e);
-    // Notify React when the hovered hex changes (for the article hover card)
+    // Notify React when the hovered hex changes (for the link hover card)
     if (!hoverHex || hoverHex.q !== q || hoverHex.r !== r) {
-      window.__hexmapOnHexHover?.(q, r, L().hexArticles.get(key(q, r)) || null);
+      window.__hexmapOnHexHover?.(q, r, L().hexLinks.get(key(q, r)) || null);
     }
     hoverHex = { q, r };
     updateStatus(q, r);
@@ -1871,7 +1932,7 @@
     };
 
     window.hexmapGetAllLinks = function () {
-      return hexArticlesToArray(L());
+      return hexLinksToArray(L());
     };
 
     window.hexmapGetHexScreenPos = function (q, r) {
@@ -1883,8 +1944,12 @@
       return { x: rect.left + x + cxOff, y: rect.top + y + cyOff, size };
     };
 
-    window.hexmapUnlinkArticle = function (q, r) {
-      L().hexArticles.delete(key(q, r));
+    // Removes a single link from a hex (a hex may carry several).
+    window.hexmapUnlinkLink = function (q, r, id, type) {
+      const k = key(q, r);
+      const remaining = (L().hexLinks.get(k) || []).filter(l => !(l.id === id && l.type === type));
+      if (remaining.length) L().hexLinks.set(k, remaining);
+      else L().hexLinks.delete(k);
       scheduleRender();
       window.__hexmapOnLinksChanged?.();
     };
@@ -1935,7 +2000,8 @@
       window.hexmapStartPickCenter   = null;
       window.hexmapCancelPickCenter  = null;
       window.hexmapGetAllLinks       = null;
-      window.hexmapUnlinkArticle     = null;
+      window.hexmapUnlinkLink        = null;
+      window.__hexmapOnLinkClick     = null;
       window.hexmapGetHexScreenPos   = null;
       window.hexmapExportPdfPages    = null;
       window.hexmapExportImages      = null;

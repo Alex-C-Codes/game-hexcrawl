@@ -514,6 +514,11 @@
   font-style: italic;
   margin: 0;
 }
+.hx-ac-row {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.hx-ac-row:hover .hx-ac-name { color: #e0c070; }
 
 /* Links panel */
 #hexmap-root #hx-links-panel {
@@ -572,6 +577,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+#hexmap-root .hx-link-badge-battlemap {
+  border-color: #b05a4a;
+  color: #b05a4a;
 }
 #hexmap-root .hx-link-name {
   flex: 1;

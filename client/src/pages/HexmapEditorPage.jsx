@@ -1,7 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { getByType } from '../lib/storage';
 import './hexmap.css';
+
+const LINK_OPEN_PATHS = { article: '/create/article', battlemap: '/create/battlemap' };
+const LINK_TYPE_LABELS = { article: 'Article', battlemap: 'Battlemap' };
+const LINK_TYPE_BADGES = { article: 'A', battlemap: 'B' };
 
 // ---- Biomes, grouped by setting — Classic matches db/seeds/geography_pillar/hex_types.json ----
 const BIOME_CATEGORIES = [
@@ -47,7 +51,7 @@ const BIOME_CATEGORIES = [
     id: 'sky', label: 'Sky Islands',
     biomes: {
       void:     { label: 'Void',           color: '#0d0d1f', weight: 0 },
-      cloudsea: { label: 'Cloud Sea',       color: '#c7d2df', weight: 0 },
+      cloudsea: { label: 'Cloud Sea',       color: '#8ec9ee', weight: 0 },
       skyreef:  { label: 'Sky Reef',        color: '#5c8a6f', weight: 0 },
       storm:    { label: 'Storm Front',     color: '#453a5e', weight: 0 },
       crystal:  { label: 'Crystal Spire',   color: '#8f6fd1', weight: 0 },
@@ -171,6 +175,7 @@ function SLabel({ children }) {
 export default function HexmapEditorPage() {
   const [searchParams] = useSearchParams();
   const contentId = searchParams.get('id') || null;
+  const navigate = useNavigate();
 
   const [tab,      setTab]     = useState('biomes');
   const [layers,   setLayers]  = useState(DEFAULT_LAYERS);
@@ -186,15 +191,22 @@ export default function HexmapEditorPage() {
   const [weights,  setWeights] = useState(DEFAULT_WEIGHTS);
   const [center,   setCenter]  = useState(null);
   const [picking,  setPicking] = useState(false);
-  const [articles,  setArticles]  = useState([]);
-  const [links,     setLinks]     = useState([]);
-  const [hoverCard, setHoverCard] = useState(null); // { name, preview, x, y, size }
-  const articlesMapRef = useRef(new Map());
+  const [articles,   setArticles]   = useState([]);
+  const [battlemaps, setBattlemaps] = useState([]);
+  const [links,      setLinks]      = useState([]);
+  const [hoverCard,  setHoverCard]  = useState(null); // { links: [{name,type,preview}], x, y, size }
+  const articlesMapRef   = useRef(new Map());
+  const battlemapsMapRef = useRef(new Map());
 
-  const refreshArticles = useCallback(async () => {
-    const list = await getByType('article');
-    setArticles(list);
-    articlesMapRef.current = new Map(list.map(a => [a.id, a]));
+  const refreshLinkables = useCallback(async () => {
+    const [articleList, battlemapList] = await Promise.all([
+      getByType('article'),
+      getByType('battlemap'),
+    ]);
+    setArticles(articleList);
+    setBattlemaps(battlemapList);
+    articlesMapRef.current   = new Map(articleList.map(a => [a.id, a]));
+    battlemapsMapRef.current = new Map(battlemapList.map(b => [b.id, b]));
   }, []);
 
   useEffect(() => {
@@ -213,16 +225,28 @@ export default function HexmapEditorPage() {
       setGhostBelow(below);
     };
 
-    window.__hexmapOnHexHover = (q, r, article) => {
-      if (!article || q === null) { setHoverCard(null); return; }
-      const pos  = window.hexmapGetHexScreenPos?.(q, r);
+    window.__hexmapOnHexHover = (q, r, hexLinks) => {
+      if (!hexLinks || !hexLinks.length || q === null) { setHoverCard(null); return; }
+      const pos = window.hexmapGetHexScreenPos?.(q, r);
       if (!pos) { setHoverCard(null); return; }
-      const item = articlesMapRef.current.get(article.id);
-      const preview = (item?.data?.text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
-      setHoverCard({ name: article.name, preview, x: pos.x, y: pos.y, size: pos.size });
+      const enriched = hexLinks.map(link => {
+        const item = link.type === 'battlemap'
+          ? battlemapsMapRef.current.get(link.id)
+          : articlesMapRef.current.get(link.id);
+        const preview = link.type === 'article'
+          ? (item?.data?.text || '').replace(/\s+/g, ' ').trim().slice(0, 200)
+          : '';
+        return { ...link, preview };
+      });
+      setHoverCard({ links: enriched, q, r, x: pos.x, y: pos.y, size: pos.size });
     };
 
-    refreshArticles();
+    window.__hexmapOnLinkClick = (link) => {
+      const path = LINK_OPEN_PATHS[link.type];
+      if (path) navigate(`${path}?id=${link.id}`);
+    };
+
+    refreshLinkables();
 
     const script = document.createElement('script');
     script.src = '/hexmap.js';
@@ -235,15 +259,15 @@ export default function HexmapEditorPage() {
       const s = document.querySelector('script[src="/hexmap.js"]');
       if (s) document.body.removeChild(s);
     };
-  }, [contentId, refreshArticles]);
+  }, [contentId, refreshLinkables, navigate]);
 
   // Refresh article list and links when the Links tab is opened, or the active layer changes
   useEffect(() => {
     if (tab === 'links') {
-      refreshArticles();
+      refreshLinkables();
       if (window.hexmapGetAllLinks) setLinks(window.hexmapGetAllLinks());
     }
-  }, [tab, activeLayerIdx, refreshArticles]);
+  }, [tab, activeLayerIdx, refreshLinkables]);
 
   const switchLayer = useCallback((idx) => {
     window.hexmapSwitchLayer?.(idx);
@@ -501,15 +525,15 @@ export default function HexmapEditorPage() {
                 <div className="hx-links-section">
                   <div className="hx-links-label">On this map</div>
                   {links.map(l => (
-                    <div key={`${l.q},${l.r}`} className="hx-link-row">
-                      <span className="hx-link-badge">A</span>
+                    <div key={`${l.q},${l.r},${l.type},${l.id}`} className="hx-link-row">
+                      <span className="hx-link-badge" title={LINK_TYPE_LABELS[l.type]}>{LINK_TYPE_BADGES[l.type]}</span>
                       <span className="hx-link-name" title={l.name}>{l.name}</span>
                       <span className="hx-link-coord">({l.q},{l.r})</span>
                       <button
                         className="hx-link-unlink"
                         title="Remove link"
                         onClick={() => {
-                          if (window.hexmapUnlinkArticle) window.hexmapUnlinkArticle(l.q, l.r);
+                          if (window.hexmapUnlinkLink) window.hexmapUnlinkLink(l.q, l.r, l.id, l.type);
                         }}
                       >×</button>
                     </div>
@@ -519,7 +543,7 @@ export default function HexmapEditorPage() {
 
               {/* Available articles */}
               <div className="hx-links-section">
-                <div className="hx-links-label">Drag to a hex</div>
+                <div className="hx-links-label">Drag an article to a hex</div>
                 {articles.length === 0 ? (
                   <div className="hx-links-empty">No articles saved yet.<br />Create one in the Article Editor.</div>
                 ) : (
@@ -529,12 +553,35 @@ export default function HexmapEditorPage() {
                       className="hx-draggable-article"
                       draggable
                       onDragStart={e => {
-                        e.dataTransfer.setData('application/hexmap-article', JSON.stringify({ id: a.id, name: a.name }));
+                        e.dataTransfer.setData('application/hexmap-link', JSON.stringify({ id: a.id, name: a.name, type: 'article' }));
                         e.dataTransfer.effectAllowed = 'link';
                       }}
                     >
                       <span className="hx-link-badge">A</span>
                       <span className="hx-link-name" title={a.name}>{a.name}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Available battlemaps */}
+              <div className="hx-links-section">
+                <div className="hx-links-label">Drag a battlemap to a hex</div>
+                {battlemaps.length === 0 ? (
+                  <div className="hx-links-empty">No battlemaps saved yet.<br />Create one in the Battlemap Editor.</div>
+                ) : (
+                  battlemaps.map(b => (
+                    <div
+                      key={b.id}
+                      className="hx-draggable-article"
+                      draggable
+                      onDragStart={e => {
+                        e.dataTransfer.setData('application/hexmap-link', JSON.stringify({ id: b.id, name: b.name, type: 'battlemap' }));
+                        e.dataTransfer.effectAllowed = 'link';
+                      }}
+                    >
+                      <span className="hx-link-badge hx-link-badge-battlemap">B</span>
+                      <span className="hx-link-name" title={b.name}>{b.name}</span>
                     </div>
                   ))
                 )}
@@ -638,22 +685,35 @@ export default function HexmapEditorPage() {
           )}
         </div>
 
-        {/* Article hover card — mirrors the settlement card in the play tab */}
+        {/* Link hover card — mirrors the settlement card in the play tab. One row per
+            link on the hex; click a row (or its badge on the canvas) to open it. */}
         {hoverCard && (
           <div id="hx-article-card" style={{
             left: Math.max(8, Math.min(hoverCard.x - 120, window.innerWidth - 264)),
             top:  hoverCard.y - hoverCard.size * 1.4,
             transform: 'translateY(-100%)',
           }}>
-            <div className="hx-ac-header">
-              <span className="hx-ac-name">{hoverCard.name}</span>
-              <span className="hx-ac-tag">Article</span>
-            </div>
-            {hoverCard.preview && (
-              <p className="hx-ac-preview">
-                {hoverCard.preview}{hoverCard.preview.length >= 200 ? '…' : ''}
-              </p>
-            )}
+            {hoverCard.links.map((link, i) => (
+              <div
+                key={`${link.type},${link.id}`}
+                className="hx-ac-row"
+                style={{ borderTop: i > 0 ? '1px solid #25180a' : 'none', marginTop: i > 0 ? 8 : 0, paddingTop: i > 0 ? 8 : 0 }}
+                onClick={() => {
+                  const path = LINK_OPEN_PATHS[link.type];
+                  if (path) navigate(`${path}?id=${link.id}`);
+                }}
+              >
+                <div className="hx-ac-header">
+                  <span className="hx-ac-name">{link.name}</span>
+                  <span className="hx-ac-tag">{LINK_TYPE_LABELS[link.type]}</span>
+                </div>
+                {link.preview && (
+                  <p className="hx-ac-preview">
+                    {link.preview}{link.preview.length >= 200 ? '…' : ''}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -664,7 +724,7 @@ export default function HexmapEditorPage() {
         <span id="hx-status-article" style={{ color: '#c9a84c' }} />
         <span className="sbsep">|</span>
         <span id="hx-status-tool">Tool: paint</span>
-        <span id="hx-status-hint">Hold Space to pan · Scroll to zoom · Ctrl+Z undo · Drag articles from Links tab</span>
+        <span id="hx-status-hint">Hold Space to pan · Scroll to zoom · Ctrl+Z undo · Drag links from Links tab · Click a link badge to open it</span>
       </div>
     </div>
   );

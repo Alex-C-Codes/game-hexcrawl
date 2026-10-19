@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
 export default function LoginPage() {
-  const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
+  const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,11 +24,17 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate(from, { replace: true });
-      } else {
+      } else if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         setInfo('Account created. Check your email to confirm, then sign in.');
         setMode('signin');
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setInfo('Check your email for a password reset link.');
       }
     } catch (err) {
       setError(err.message || 'Something went wrong.');
@@ -47,7 +53,7 @@ export default function LoginPage() {
         borderRadius: 10, padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 14,
       }}>
         <h1 style={{ color: '#c9a84c', fontSize: '1.1rem', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 6 }}>
-          {mode === 'signin' ? 'Sign In' : 'Create Account'}
+          {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
         </h1>
 
         <label style={{ color: '#8a8070', fontSize: '0.75rem' }}>
@@ -61,17 +67,33 @@ export default function LoginPage() {
           />
         </label>
 
-        <label style={{ color: '#8a8070', fontSize: '0.75rem' }}>
-          Password
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
+        {mode !== 'forgot' && (
+          <label style={{ color: '#8a8070', fontSize: '0.75rem' }}>
+            Password
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              style={inputStyle}
+            />
+          </label>
+        )}
+
+        {mode === 'signin' && (
+          <button
+            type="button"
+            onClick={() => { setMode('forgot'); setError(''); setInfo(''); }}
+            style={{
+              alignSelf: 'flex-end', background: 'none', border: 'none', color: '#5a5040',
+              fontFamily: 'Georgia, serif', fontSize: '0.7rem', cursor: 'pointer',
+              textDecoration: 'underline', marginTop: -6,
+            }}
+          >
+            Forgot password?
+          </button>
+        )}
 
         {error && <div style={{ color: '#c05050', fontSize: '0.75rem' }}>{error}</div>}
         {info  && <div style={{ color: '#5a9a5a', fontSize: '0.75rem' }}>{info}</div>}
@@ -81,19 +103,32 @@ export default function LoginPage() {
           color: '#c9a84c', fontFamily: 'Georgia, serif', fontSize: '0.85rem',
           padding: '8px 0', cursor: busy ? 'default' : 'pointer', marginTop: 6,
         }}>
-          {busy ? 'Please wait…' : mode === 'signin' ? 'Sign In' : 'Sign Up'}
+          {busy ? 'Please wait…' : mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Sign Up' : 'Send Reset Link'}
         </button>
 
-        <button
-          type="button"
-          onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setInfo(''); }}
-          style={{
-            background: 'none', border: 'none', color: '#5a5040', fontFamily: 'Georgia, serif',
-            fontSize: '0.72rem', cursor: 'pointer', textDecoration: 'underline',
-          }}
-        >
-          {mode === 'signin' ? "Need an account? Sign up" : 'Already have an account? Sign in'}
-        </button>
+        {mode === 'forgot' ? (
+          <button
+            type="button"
+            onClick={() => { setMode('signin'); setError(''); setInfo(''); }}
+            style={{
+              background: 'none', border: 'none', color: '#5a5040', fontFamily: 'Georgia, serif',
+              fontSize: '0.72rem', cursor: 'pointer', textDecoration: 'underline',
+            }}
+          >
+            Back to sign in
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setInfo(''); }}
+            style={{
+              background: 'none', border: 'none', color: '#5a5040', fontFamily: 'Georgia, serif',
+              fontSize: '0.72rem', cursor: 'pointer', textDecoration: 'underline',
+            }}
+          >
+            {mode === 'signin' ? "Need an account? Sign up" : 'Already have an account? Sign in'}
+          </button>
+        )}
       </form>
     </div>
   );

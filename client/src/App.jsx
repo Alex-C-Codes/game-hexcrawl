@@ -9,6 +9,7 @@ import HexmapEditorPage       from './pages/HexmapEditorPage';
 import Voxel3DPage            from './pages/Voxel3DPage';
 import SettlementPage         from './pages/SettlementPage';
 import LoginPage              from './pages/LoginPage';
+import ResetPasswordPage      from './pages/ResetPasswordPage';
 import Navbar                 from './components/NavBar';
 import ProtectedRoute         from './components/ProtectedRoute';
 import { AuthProvider }       from './lib/AuthContext';
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/"                          element={<GamePage />} />
             <Route path="/hexmap"                    element={<HexmapPage />} />
             <Route path="/login"                     element={<LoginPage />} />
+            <Route path="/reset-password"            element={<ResetPasswordPage />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/article"                   element={<ArticlePage />} />

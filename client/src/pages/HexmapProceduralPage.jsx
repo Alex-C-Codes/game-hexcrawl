@@ -44,7 +44,7 @@ const BIOME_CATEGORIES = [
     id: 'sky', label: 'Sky Islands',
     biomes: {
       void:     { label: 'Void',           color: '#0d0d1f', weight: 0 },
-      cloudsea: { label: 'Cloud Sea',       color: '#c7d2df', weight: 0 },
+      cloudsea: { label: 'Cloud Sea',       color: '#8ec9ee', weight: 0 },
       skyreef:  { label: 'Sky Reef',        color: '#5c8a6f', weight: 0 },
       storm:    { label: 'Storm Front',     color: '#453a5e', weight: 0 },
       crystal:  { label: 'Crystal Spire',   color: '#8f6fd1', weight: 0 },
