@@ -245,7 +245,7 @@
 
 /* Sidebar */
 #hexmap-root #hx-sidebar {
-  width: 152px;
+  width: 190px;
   flex-shrink: 0;
   background: #0a0a0a;
   border-right: 1px solid #141414;
@@ -257,23 +257,30 @@
 /* Sidebar tabs */
 #hexmap-root #hx-sidebar-tabs {
   display: flex;
+  flex-wrap: wrap;
   flex-shrink: 0;
   border-bottom: 1px solid #141414;
 }
 #hexmap-root .hx-stab {
-  flex: 1;
+  flex: 1 1 33.33%;
+  min-width: 0;
   background: none;
   border: none;
   border-right: 1px solid #141414;
+  border-bottom: 1px solid #141414;
   color: #3a3530;
   font-family: Georgia, serif;
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 7px 0;
+  padding: 7px 2px;
   cursor: pointer;
   transition: color 0.12s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+#hexmap-root .hx-stab:nth-child(3n) { border-right: none; }
 #hexmap-root .hx-stab:last-child { border-right: none; }
 #hexmap-root .hx-stab:hover { color: #7a7060; }
 #hexmap-root .hx-stab.active { color: #c9a84c; background: #0e0e0a; }
@@ -316,6 +323,39 @@
   flex-shrink: 0;
 }
 #hexmap-root .hx-attr-create-link:hover { color: #c9a84c; }
+
+/* Inspect panel (Select tool) — right-hand sidebar showing one hex's full state */
+#hexmap-root #hx-inspect-panel {
+  width: 220px;
+  flex-shrink: 0;
+  background: #0a0a0a;
+  border-left: 1px solid #141414;
+  overflow-y: auto;
+  padding: 10px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+#hexmap-root .hx-inspect-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #c9a84c;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1a1a1a;
+}
+#hexmap-root .hx-inspect-section { display: flex; flex-direction: column; gap: 4px; }
+#hexmap-root .hx-inspect-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: #a09060;
+}
+#hexmap-root .hx-inspect-link { cursor: pointer; }
+#hexmap-root .hx-inspect-link:hover { background: #161410; border-color: #2a2520; color: #c9a84c; }
 #hexmap-root .hx-pal-item {
   display: flex;
   align-items: center;

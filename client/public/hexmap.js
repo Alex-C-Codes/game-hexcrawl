@@ -1074,6 +1074,27 @@
     return L().routes.find(route => route.points.some(p => p.q === q && p.r === r)) || null;
   }
 
+  // ── Hex inspection (Select tool) — gathers everything known about one hex:
+  // biome, routes, content links, and every painted attribute (not just the
+  // one currently being painted), so the side panel shows the full picture.
+  function buildHexInfo(q, r) {
+    const k = key(q, r);
+    const biomeKey = L().grid.get(k) || null;
+    const route = findRouteAt(q, r);
+    const attributes = [];
+    for (const [attrKey, m] of L().attributes) {
+      const value = m.get(k);
+      if (value) attributes.push({ attrKey, label: ATTRIBUTE_TYPES[attrKey]?.label || attrKey, value });
+    }
+    return {
+      q, r,
+      biome: biomeKey ? { key: biomeKey, label: BIOMES[biomeKey]?.label || biomeKey, color: BIOMES[biomeKey]?.color || '#888' } : null,
+      route: route ? { type: route.type, label: ROUTE_TYPES[route.type]?.label || route.type, color: routeTypeColors[route.type] || ROUTE_TYPES[route.type]?.color } : null,
+      links: (L().hexLinks.get(k) || []).map(l => ({ ...l })),
+      attributes,
+    };
+  }
+
   function drawRoute(route, size, cxOff, cyOff) {
     if (!route.points || route.points.length < 2) return;
     const def = ROUTE_TYPES[route.type];
@@ -1764,6 +1785,7 @@
     if (pickCenterCb)                         { canvas.style.cursor = 'cell';       return; }
     if (isPanning)                            { canvas.style.cursor = 'grabbing';   return; }
     if (spaceDown || currentTool === 'pan')   { canvas.style.cursor = 'grab';       return; }
+    if (currentTool === 'select')             { canvas.style.cursor = 'pointer';    return; }
     canvas.style.cursor = 'crosshair';
   }
 
@@ -1914,6 +1936,11 @@
       return;
     }
 
+    if (currentTool === 'select') {
+      window.__hexmapOnHexSelect?.(q, r, buildHexInfo(q, r));
+      return;
+    }
+
     pendingSnapshot = snapshot();
     isPainting = true;
     applyTool(q, r);
@@ -2004,7 +2031,7 @@
       scheduleRender();
       return;
     }
-    const toolMap = { b: 'paint', e: 'erase', f: 'fill', p: 'pick', h: 'pan', r: 'route' };
+    const toolMap = { b: 'paint', e: 'erase', f: 'fill', p: 'pick', h: 'pan', r: 'route', s: 'select' };
     const tool = toolMap[e.key.toLowerCase()];
     if (tool) { currentTool = tool; updateToolbar(); updateSelectedInfo(); updateCursor(); return; }
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
@@ -2210,6 +2237,7 @@
       window.hexmapEnterAttributeMode = null;
       window.hexmapExitAttributeMode  = null;
       window.__hexmapOnHexHover      = null;
+      window.__hexmapOnHexSelect     = null;
     };
   }
 

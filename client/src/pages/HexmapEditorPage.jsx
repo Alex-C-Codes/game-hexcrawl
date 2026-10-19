@@ -202,6 +202,7 @@ export default function HexmapEditorPage() {
   const [battlemaps, setBattlemaps] = useState([]);
   const [links,      setLinks]      = useState([]);
   const [attributeType, setAttributeType] = useState('faction');
+  const [selectedHex, setSelectedHex] = useState(null); // hexmap.js's buildHexInfo() result
   const [hoverCard,  setHoverCard]  = useState(null); // { links: [{name,type,preview}], x, y, size }
   const articlesMapRef   = useRef(new Map());
   const battlemapsMapRef = useRef(new Map());
@@ -252,6 +253,10 @@ export default function HexmapEditorPage() {
     window.__hexmapOnLinkClick = (link) => {
       const path = LINK_OPEN_PATHS[link.type];
       if (path) navigate(`${path}?id=${link.id}`);
+    };
+
+    window.__hexmapOnHexSelect = (q, r, info) => {
+      setSelectedHex(info);
     };
 
     refreshLinkables();
@@ -511,6 +516,7 @@ export default function HexmapEditorPage() {
           <option value="fill">Fill</option>
         </select>
         <button className="hx-tool-btn" data-tool="pan">Pan <span className="hx-key">H</span></button>
+        <button className="hx-tool-btn" data-tool="select">Select <span className="hx-key">S</span></button>
         <div className="hx-tbsep" />
         <button id="btn-hx-undo" className="hx-tool-btn">↩ Undo</button>
         <button id="btn-hx-redo" className="hx-tool-btn">↪ Redo</button>
@@ -730,6 +736,74 @@ export default function HexmapEditorPage() {
             </div>
           )}
         </div>
+
+        {/* Inspect panel — Select tool (S). Shows everything known about the
+            clicked hex: biome, route, attributes (faction, etc.), and links. */}
+        {selectedHex && (
+          <div id="hx-inspect-panel">
+            <div className="hx-inspect-header">
+              <span>Hex ({selectedHex.q}, {selectedHex.r})</span>
+              <button className="hx-link-unlink" onClick={() => setSelectedHex(null)} title="Close">×</button>
+            </div>
+
+            <div className="hx-inspect-section">
+              <div className="hx-links-label">Biome</div>
+              {selectedHex.biome ? (
+                <div className="hx-inspect-row">
+                  <span className="hx-pal-swatch" style={{ background: selectedHex.biome.color }} />
+                  {selectedHex.biome.label}
+                </div>
+              ) : (
+                <div className="hx-links-empty">No terrain painted here.</div>
+              )}
+            </div>
+
+            {selectedHex.route && (
+              <div className="hx-inspect-section">
+                <div className="hx-links-label">Route</div>
+                <div className="hx-inspect-row">
+                  <span className="hx-pal-swatch" style={{ background: selectedHex.route.color }} />
+                  {selectedHex.route.label}
+                </div>
+              </div>
+            )}
+
+            <div className="hx-inspect-section">
+              <div className="hx-links-label">Attributes</div>
+              {selectedHex.attributes.length === 0 ? (
+                <div className="hx-links-empty">None painted here.</div>
+              ) : (
+                selectedHex.attributes.map(a => (
+                  <div key={a.attrKey} className="hx-inspect-row">
+                    <span className="hx-pal-swatch" style={{ background: a.value.color }} />
+                    {a.label}: {a.value.name}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="hx-inspect-section">
+              <div className="hx-links-label">Links</div>
+              {selectedHex.links.length === 0 ? (
+                <div className="hx-links-empty">No article or battlemap linked.</div>
+              ) : (
+                selectedHex.links.map(l => (
+                  <div
+                    key={`${l.type},${l.id}`}
+                    className="hx-link-row hx-inspect-link"
+                    onClick={() => {
+                      const path = LINK_OPEN_PATHS[l.type];
+                      if (path) navigate(`${path}?id=${l.id}`);
+                    }}
+                  >
+                    <span className="hx-link-badge">{LINK_TYPE_BADGES[l.type]}</span>
+                    <span className="hx-link-name" title={l.name}>{l.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Link hover card — mirrors the settlement card in the play tab. One row per
             link on the hex; click a row (or its badge on the canvas) to open it. */}
