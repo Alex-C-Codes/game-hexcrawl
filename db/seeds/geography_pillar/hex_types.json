@@ -7,6 +7,9 @@
     "requires_boat": true,
     "encounter_chance": 1.0,
     "travel_cost": null,
+    "forage_chance": 0.05,
+    "hunt_chance": 0.1,
+    "lost_chance": 0.5,
     "events": [
       { "type": "creature",   "title": "Sea Serpent",       "desc": "A serpentine neck rises from the depths, water sheeting off dark scales." },
       { "type": "creature",   "title": "Kraken's Reach",    "desc": "A single tentacle breaks the surface nearby — forty feet long and searching." },
@@ -25,6 +28,9 @@
     "requires_boat": false,
     "encounter_chance": 0.20,
     "travel_cost": 0.333,
+    "forage_chance": 0.35,
+    "hunt_chance": 0.25,
+    "lost_chance": 0.1,
     "events": [
       { "type": "creature",   "title": "Pirate Raiders",  "desc": "A longboat beaches nearby. Armed sailors fan out, scanning for valuables." },
       { "type": "creature",   "title": "Giant Crab",      "desc": "The rocks shift — they aren't rocks. A crab the size of a barn heaves upright." },
@@ -43,6 +49,9 @@
     "requires_boat": false,
     "encounter_chance": 0.15,
     "travel_cost": 0.333,
+    "forage_chance": 0.45,
+    "hunt_chance": 0.35,
+    "lost_chance": 0.05,
     "events": [
       { "type": "creature",   "title": "Wolf Pack",        "desc": "A pack of gaunt wolves emerges from the tall grass, yellow eyes locked on the party." },
       { "type": "creature",   "title": "Wandering Ogre",   "desc": "A lumbering ogre blocks the road, demanding a toll of \"shiny things.\"" },
@@ -61,6 +70,9 @@
     "requires_boat": false,
     "encounter_chance": 0.30,
     "travel_cost": 0.5,
+    "forage_chance": 0.4,
+    "hunt_chance": 0.3,
+    "lost_chance": 0.35,
     "events": [
       { "type": "creature",   "title": "Dire Wolf",        "desc": "A wolf the size of a horse steps between the trees, breath misting in the cool air." },
       { "type": "creature",   "title": "Giant Spider",     "desc": "Silken webs span the path. Something large stirs in the canopy above." },
@@ -79,6 +91,9 @@
     "requires_boat": false,
     "encounter_chance": 0.25,
     "travel_cost": 0.5,
+    "forage_chance": 0.3,
+    "hunt_chance": 0.3,
+    "lost_chance": 0.2,
     "events": [
       { "type": "creature",   "title": "Bandit Ambush",     "desc": "Arrows thud into the earth. Rough voices demand surrender from the ridgeline." },
       { "type": "creature",   "title": "Hill Giant",        "desc": "A giant hurls boulders at birds from the nearest hill — and then notices the party." },
@@ -97,6 +112,9 @@
     "requires_boat": false,
     "encounter_chance": 0.30,
     "travel_cost": 0.5,
+    "forage_chance": 0.25,
+    "hunt_chance": 0.35,
+    "lost_chance": 0.25,
     "events": [
       { "type": "creature",   "title": "Griffon",           "desc": "A griffon descends from above with a piercing shriek, wings beating a storm of dust." },
       { "type": "creature",   "title": "Wyvern",            "desc": "A wyvern circles overhead, its barbed tail trailing poison. It has spotted the party." },
@@ -115,6 +133,9 @@
     "requires_boat": false,
     "encounter_chance": 0.45,
     "travel_cost": 1.0,
+    "forage_chance": 0.15,
+    "hunt_chance": 0.25,
+    "lost_chance": 0.3,
     "events": [
       { "type": "creature",   "title": "Dragon Wyrmling",   "desc": "A young dragon emerges from a cave mouth, breathing jets of flame." },
       { "type": "creature",   "title": "Stone Golem",       "desc": "What seemed a rockface lurches forward — a massive golem, eyes glowing dull red." },
@@ -133,6 +154,9 @@
     "requires_boat": false,
     "encounter_chance": 0.35,
     "travel_cost": 0.5,
+    "forage_chance": 0.1,
+    "hunt_chance": 0.15,
+    "lost_chance": 0.45,
     "events": [
       { "type": "creature",   "title": "Giant Scorpion",     "desc": "A scorpion the size of a cart crawls from beneath the sand, claws raised." },
       { "type": "creature",   "title": "Sand Worm",          "desc": "The ground vibrates. Seconds before something enormous breaks the surface." },
@@ -151,6 +175,9 @@
     "requires_boat": false,
     "encounter_chance": 0.40,
     "travel_cost": 0.5,
+    "forage_chance": 0.25,
+    "hunt_chance": 0.2,
+    "lost_chance": 0.5,
     "events": [
       { "type": "creature",   "title": "Bog Troll",        "desc": "Something enormous slides from the black water, reaching with long arms." },
       { "type": "creature",   "title": "Swamp Witch",      "desc": "A figure watches from a stilted shack. She already knows your names." },

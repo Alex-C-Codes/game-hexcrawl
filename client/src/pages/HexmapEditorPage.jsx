@@ -206,16 +206,19 @@ export default function HexmapEditorPage() {
   const [hoverCard,  setHoverCard]  = useState(null); // { links: [{name,type,preview}], x, y, size }
   const articlesMapRef   = useRef(new Map());
   const battlemapsMapRef = useRef(new Map());
+  const factionsMapRef   = useRef(new Map());
 
   const refreshLinkables = useCallback(async () => {
-    const [articleList, battlemapList] = await Promise.all([
+    const [articleList, battlemapList, factionList] = await Promise.all([
       getByType('article'),
       getByType('battlemap'),
+      getByType('faction'),
     ]);
     setArticles(articleList);
     setBattlemaps(battlemapList);
     articlesMapRef.current   = new Map(articleList.map(a => [a.id, a]));
     battlemapsMapRef.current = new Map(battlemapList.map(b => [b.id, b]));
+    factionsMapRef.current   = new Map(factionList.map(f => [f.id, f]));
   }, []);
 
   useEffect(() => {
@@ -256,7 +259,15 @@ export default function HexmapEditorPage() {
     };
 
     window.__hexmapOnHexSelect = (q, r, info) => {
-      setSelectedHex(info);
+      // hexmap.js only knows the { id, name, color } snapshot painted onto the
+      // hex — attach the full faction record (description, encounter events)
+      // from the library so the panel can show more than just the swatch.
+      const attributes = info.attributes.map(attr => {
+        if (attr.attrKey !== 'faction') return attr;
+        const full = factionsMapRef.current.get(attr.value.id);
+        return full ? { ...attr, faction: full } : attr;
+      });
+      setSelectedHex({ ...info, attributes });
     };
 
     refreshLinkables();
@@ -431,6 +442,15 @@ export default function HexmapEditorPage() {
   }
 
   const centerLabel = center ? `(${center.q}, ${center.r})` : 'None';
+
+  // Resolved encounter table for the selected hex: the biome's base pool plus
+  // whatever any factions painted on this hex contribute on top of it.
+  const resolvedEncounters = selectedHex ? [
+    ...(selectedHex.biome?.mechanics?.events || []).map(e => ({ ...e, source: 'Biome' })),
+    ...selectedHex.attributes
+      .filter(a => a.attrKey === 'faction' && a.faction)
+      .flatMap(a => (a.faction.data?.events || []).map(e => ({ ...e, source: a.faction.name }))),
+  ] : [];
 
   return (
     <div id="hexmap-root">
@@ -758,6 +778,25 @@ export default function HexmapEditorPage() {
               )}
             </div>
 
+            <div className="hx-inspect-section">
+              <div className="hx-links-label">Mechanics</div>
+              {selectedHex.biome?.mechanics ? (
+                <>
+                  <div className="hx-inspect-row">Encounter chance: {Math.round(selectedHex.biome.mechanics.encounterChance * 100)}%</div>
+                  <div className="hx-inspect-row">Forage chance: {Math.round(selectedHex.biome.mechanics.forageChance * 100)}%</div>
+                  <div className="hx-inspect-row">Hunt chance: {Math.round(selectedHex.biome.mechanics.huntChance * 100)}%</div>
+                  <div className="hx-inspect-row">Chance of getting lost: {Math.round(selectedHex.biome.mechanics.lostChance * 100)}%</div>
+                  {selectedHex.biome.mechanics.travelCost != null && (
+                    <div className="hx-inspect-row">Travel cost: {selectedHex.biome.mechanics.travelCost}</div>
+                  )}
+                </>
+              ) : (
+                <div className="hx-links-empty">
+                  {selectedHex.biome ? 'Not configured for this biome yet.' : 'Paint a biome here first.'}
+                </div>
+              )}
+            </div>
+
             {selectedHex.route && (
               <div className="hx-inspect-section">
                 <div className="hx-links-label">Route</div>
@@ -798,6 +837,23 @@ export default function HexmapEditorPage() {
                   >
                     <span className="hx-link-badge">{LINK_TYPE_BADGES[l.type]}</span>
                     <span className="hx-link-name" title={l.name}>{l.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="hx-inspect-section">
+              <div className="hx-links-label">Random Encounters — biome + factions combined</div>
+              {resolvedEncounters.length === 0 ? (
+                <div className="hx-links-empty">Nothing rolls here yet.</div>
+              ) : (
+                resolvedEncounters.map((enc, i) => (
+                  <div key={i} className="hx-encounter-row">
+                    <div className="hx-encounter-head">
+                      <span className="hx-encounter-title">{enc.title}</span>
+                      <span className="hx-encounter-source">{enc.source}</span>
+                    </div>
+                    <p className="hx-encounter-desc">{enc.desc}</p>
                   </div>
                 ))
               )}

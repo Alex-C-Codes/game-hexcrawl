@@ -326,7 +326,7 @@
 
 /* Inspect panel (Select tool) — right-hand sidebar showing one hex's full state */
 #hexmap-root #hx-inspect-panel {
-  width: 220px;
+  width: 260px;
   flex-shrink: 0;
   background: #0a0a0a;
   border-left: 1px solid #141414;
@@ -356,6 +356,39 @@
 }
 #hexmap-root .hx-inspect-link { cursor: pointer; }
 #hexmap-root .hx-inspect-link:hover { background: #161410; border-color: #2a2520; color: #c9a84c; }
+
+#hexmap-root .hx-encounter-row {
+  background: #0d0d10;
+  border: 1px solid #1a1a1a;
+  border-radius: 5px;
+  padding: 7px 9px;
+  margin-bottom: 6px;
+}
+#hexmap-root .hx-encounter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+#hexmap-root .hx-encounter-title {
+  color: #c9a84c;
+  font-size: 0.72rem;
+  font-weight: bold;
+}
+#hexmap-root .hx-encounter-source {
+  color: #5a5040;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+#hexmap-root .hx-encounter-desc {
+  color: #7a7060;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  margin: 0;
+}
 #hexmap-root .hx-pal-item {
   display: flex;
   align-items: center;
