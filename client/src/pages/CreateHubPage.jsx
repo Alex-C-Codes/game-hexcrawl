@@ -38,6 +38,13 @@ const TYPES = [
     href: '/create/settlement',
     desc: 'Design villages, towns, and cities tile by tile. Place roads, buildings, and landmarks.',
   },
+  {
+    key: 'faction',
+    title: 'Faction',
+    icon: '🛡️',
+    href: '/create/faction',
+    desc: 'Define a faction’s name, color, and encounters, then paint its zone of influence onto your hex map.',
+  },
 ];
 
 const cardStyle = {

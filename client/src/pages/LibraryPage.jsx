@@ -4,12 +4,12 @@ import { getAll, remove, upsert } from '../lib/storage';
 
 const LEGACY_KEY = 'hx_content';
 
-const TYPE_LABELS = { battlemap: 'Battlemap', article: 'Article', hexmap: 'Hex Map' };
-const TYPE_ICONS  = { battlemap: '⚔️', article: '📜', hexmap: '🗺️' };
-const EDIT_PATHS  = { battlemap: '/create/battlemap', article: '/create/article', hexmap: '/create/hexmap' };
+const TYPE_LABELS = { battlemap: 'Battlemap', article: 'Article', hexmap: 'Hex Map', faction: 'Faction' };
+const TYPE_ICONS  = { battlemap: '⚔️', article: '📜', hexmap: '🗺️', faction: '🛡️' };
+const EDIT_PATHS  = { battlemap: '/create/battlemap', article: '/create/article', hexmap: '/create/hexmap', faction: '/create/faction' };
 
-const FILTERS = ['All', 'Battlemap', 'Article', 'Hex Map'];
-const TYPE_KEYS = { 'All': null, 'Battlemap': 'battlemap', 'Article': 'article', 'Hex Map': 'hexmap' };
+const FILTERS = ['All', 'Battlemap', 'Article', 'Hex Map', 'Faction'];
+const TYPE_KEYS = { 'All': null, 'Battlemap': 'battlemap', 'Article': 'article', 'Hex Map': 'hexmap', 'Faction': 'faction' };
 
 function formatDate(iso) {
   if (!iso) return '';

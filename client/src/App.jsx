@@ -10,6 +10,7 @@ import Voxel3DPage            from './pages/Voxel3DPage';
 import SettlementPage         from './pages/SettlementPage';
 import LoginPage              from './pages/LoginPage';
 import ResetPasswordPage      from './pages/ResetPasswordPage';
+import FactionPage            from './pages/FactionPage';
 import Navbar                 from './components/NavBar';
 import ProtectedRoute         from './components/ProtectedRoute';
 import { AuthProvider }       from './lib/AuthContext';
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/create/hexmap"             element={<HexmapEditorPage />} />
               <Route path="/create/voxel3d"           element={<Voxel3DPage />} />
               <Route path="/create/settlement"        element={<SettlementPage />} />
+              <Route path="/create/faction"            element={<FactionPage />} />
               <Route path="/library"                   element={<LibraryPage />} />
             </Route>
           </Route>

@@ -1,11 +1,18 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { getByType } from '../lib/storage';
 import './hexmap.css';
 
 const LINK_OPEN_PATHS = { article: '/create/article', battlemap: '/create/battlemap' };
 const LINK_TYPE_LABELS = { article: 'Article', battlemap: 'Battlemap' };
 const LINK_TYPE_BADGES = { article: 'A', battlemap: 'B' };
+
+// Paintable attribute layers — zone-of-influence style overlays. Mirrors the
+// ATTRIBUTE_TYPES registry in hexmap.js; adding a new paintable attribute
+// means adding an entry here too (label + where to send "create a new one").
+const ATTRIBUTE_TYPES = {
+  faction: { label: 'Faction', createPath: '/create/faction' },
+};
 
 // ---- Biomes, grouped by setting — Classic matches db/seeds/geography_pillar/hex_types.json ----
 const BIOME_CATEGORIES = [
@@ -194,6 +201,7 @@ export default function HexmapEditorPage() {
   const [articles,   setArticles]   = useState([]);
   const [battlemaps, setBattlemaps] = useState([]);
   const [links,      setLinks]      = useState([]);
+  const [attributeType, setAttributeType] = useState('faction');
   const [hoverCard,  setHoverCard]  = useState(null); // { links: [{name,type,preview}], x, y, size }
   const articlesMapRef   = useRef(new Map());
   const battlemapsMapRef = useRef(new Map());
@@ -268,6 +276,16 @@ export default function HexmapEditorPage() {
       if (window.hexmapGetAllLinks) setLinks(window.hexmapGetAllLinks());
     }
   }, [tab, activeLayerIdx, refreshLinkables]);
+
+  // Attributes tab: point paint/erase/fill/radius/pick at the selected
+  // attribute layer (e.g. faction) instead of the biome grid, and back again on exit.
+  useEffect(() => {
+    if (tab === 'attributes') {
+      window.hexmapEnterAttributeMode?.(attributeType);
+    } else {
+      window.hexmapExitAttributeMode?.();
+    }
+  }, [tab, attributeType]);
 
   const switchLayer = useCallback((idx) => {
     window.hexmapSwitchLayer?.(idx);
@@ -509,6 +527,7 @@ export default function HexmapEditorPage() {
             <button className={`hx-stab${tab === 'routes'   ? ' active' : ''}`} onClick={() => setTab('routes')}>Routes</button>
             <button className={`hx-stab${tab === 'generate' ? ' active' : ''}`} onClick={() => setTab('generate')}>Generate</button>
             <button className={`hx-stab${tab === 'links'    ? ' active' : ''}`} onClick={() => setTab('links')}>Links</button>
+            <button className={`hx-stab${tab === 'attributes' ? ' active' : ''}`} onClick={() => setTab('attributes')}>Attributes</button>
           </div>
 
           {/* Palette — always in DOM so hexmap.js can populate it */}
@@ -516,6 +535,33 @@ export default function HexmapEditorPage() {
 
           {/* Route palette — always in DOM so hexmap.js can populate it */}
           <div id="hx-route-palette" style={{ display: tab === 'routes' ? 'flex' : 'none' }} />
+
+          {/* Attributes panel */}
+          {tab === 'attributes' && (
+            <div id="hx-attributes-panel">
+              <label className="hx-links-label" style={{ display: 'block', marginBottom: 6 }}>
+                Painting
+                <select
+                  value={attributeType}
+                  onChange={e => setAttributeType(e.target.value)}
+                  className="hx-gen-input"
+                  style={{ display: 'block', width: '100%', marginTop: 4 }}
+                >
+                  {Object.entries(ATTRIBUTE_TYPES).map(([key, def]) => (
+                    <option key={key} value={key}>{def.label}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="hx-links-label" style={{ marginBottom: 4 }}>
+                Click a {ATTRIBUTE_TYPES[attributeType].label.toLowerCase()} below, then paint/erase/fill/radius onto the map
+              </div>
+              {/* Populated live by hexmap.js from saved library items of this attribute's type */}
+              <div id="hx-attribute-palette" />
+              <Link to={ATTRIBUTE_TYPES[attributeType].createPath} className="hx-attr-create-link">
+                + New {ATTRIBUTE_TYPES[attributeType].label}
+              </Link>
+            </div>
+          )}
 
           {/* Links panel */}
           {tab === 'links' && (

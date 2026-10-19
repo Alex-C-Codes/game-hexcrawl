@@ -108,6 +108,14 @@
     battlemap: { badge: 'B', color: '#b05a4a' },
   };
 
+  // ── Paintable attribute layers — zone-of-influence style overlays ────────
+  // Each entry's `sourceType` is the library item type its swatches are
+  // pulled from (fetched live via window.hxStorage). Adding a new paintable
+  // attribute later is just adding another entry here.
+  const ATTRIBUTE_TYPES = {
+    faction: { label: 'Faction', sourceType: 'faction' },
+  };
+
   // ── Route types — linear features drawn across hex centers ───────────────
   // width/dash are in "hex units" and scale with zoom, like everything else.
   const ROUTE_TYPES = {
@@ -822,12 +830,25 @@
     return {
       id: crypto.randomUUID(),
       name,
-      grid: new Map(),     // "q,r" → biome string
-      hexLinks: new Map(), // "q,r" → [{ id, name, type }, ...]
+      grid: new Map(),       // "q,r" → biome string
+      hexLinks: new Map(),   // "q,r" → [{ id, name, type }, ...]
+      attributes: new Map(), // attrKey → Map("q,r" → { id, name, color })
       routes: [],              // [{ id, type, points: [{q,r}, ...] }]
       undoStack: [],
       redoStack: [],
     };
+  }
+
+  // Get-or-create a single attribute layer's "q,r" → value map.
+  function attrGrid(attrKey) {
+    if (!L().attributes.has(attrKey)) L().attributes.set(attrKey, new Map());
+    return L().attributes.get(attrKey);
+  }
+
+  // Read-only accessor that never mutates `attributes` just by being looked at.
+  const EMPTY_MAP = new Map();
+  function attrGridReadonly(attrKey) {
+    return L().attributes.get(attrKey) || EMPTY_MAP;
   }
 
   let layers = [createLayer('Sky Islands'), createLayer('Realm'), createLayer('Underdark')];
@@ -904,6 +925,24 @@
   let currentTool  = 'paint';
   let currentContentId = null;
 
+  // ── Attribute painting (zone-of-influence style overlays) ────────────────
+  // currentPaintTarget is 'biome' or an ATTRIBUTE_TYPES key — paint/erase/fill/
+  // radius/pick all branch on it. currentAttrValue is the swatch currently
+  // selected from the attribute palette (null until the user picks one).
+  let currentPaintTarget  = 'biome';
+  let currentAttributeType = 'faction';
+  let currentAttrValue    = null; // { id, name, color }
+
+  function targetMap() {
+    return currentPaintTarget === 'biome' ? L().grid : attrGrid(currentPaintTarget);
+  }
+  function targetMapReadonly() {
+    return currentPaintTarget === 'biome' ? L().grid : attrGridReadonly(currentPaintTarget);
+  }
+  function targetValue() {
+    return currentPaintTarget === 'biome' ? currentBiome : currentAttrValue;
+  }
+
   // Radius tool: click a hex to paint a ring (or filled disk) of a given
   // radius around it, all in currentBiome.
   let radiusToolValue = 3;
@@ -943,14 +982,20 @@
   }
 
   function applyRadiusTool(centerQ, centerR) {
+    if (currentPaintTarget !== 'biome' && !currentAttrValue) return; // nothing selected to paint
     const { aq, ar } = offsetToAxial(centerQ, centerR);
     const cells = radiusToolMode === 'fill'
       ? hexDisk(aq, ar, radiusToolValue)
       : hexRing(aq, ar, radiusToolValue);
+    const tMap = targetMap();
+    const value = targetValue();
     const before = snapshot();
     for (const c of cells) {
       const { q, r } = axialToOffset(c.aq, c.ar);
-      L().grid.set(key(q, r), currentBiome);
+      // Attributes describe existing terrain, not empty space — radius-paint
+      // an attribute only where a biome tile already exists.
+      if (currentPaintTarget !== 'biome' && !L().grid.has(key(q, r))) continue;
+      tMap.set(key(q, r), value);
     }
     pushUndo(before);
     scheduleRender();
@@ -982,6 +1027,7 @@
     return {
       grid: new Map(L().grid),
       routes: L().routes.map(r => ({ ...r, points: [...r.points] })),
+      attributes: new Map([...L().attributes].map(([k, m]) => [k, new Map(m)])),
     };
   }
 
@@ -997,6 +1043,7 @@
     const prev = L().undoStack.pop();
     L().grid = prev.grid;
     L().routes = prev.routes;
+    L().attributes = prev.attributes;
     scheduleRender();
   }
 
@@ -1006,7 +1053,17 @@
     const next = L().redoStack.pop();
     L().grid = next.grid;
     L().routes = next.routes;
+    L().attributes = next.attributes;
     scheduleRender();
+  }
+
+  // Loose equality for paint-target values: biome values are plain strings;
+  // attribute values are small { id, name, color } snapshots compared by id.
+  function valuesEqual(a, b) {
+    const av = a ?? null, bv = b ?? null;
+    if (av === bv) return true;
+    if (av && bv && typeof av === 'object' && typeof bv === 'object') return av.id === bv.id;
+    return false;
   }
 
   // ── Grid helpers ──────────────────────────────────────────────────────────
@@ -1037,12 +1094,17 @@
     ctx.restore();
   }
 
-  // ── Flood fill (only spreads to existing hexes) ───────────────────────────
+  // ── Flood fill — only spreads across hexes that already have terrain, but
+  // writes into whichever map is currently targeted (biome or an attribute) ──
   function floodFill(startQ, startR) {
     const startKey = key(startQ, startR);
     if (!L().grid.has(startKey)) return;
-    const origBiome = L().grid.get(startKey);
-    if (origBiome === currentBiome) return;
+    if (currentPaintTarget !== 'biome' && !currentAttrValue) return; // nothing selected to paint
+
+    const tMap = targetMap();
+    const newValue = targetValue();
+    const origValue = tMap.get(startKey) ?? null;
+    if (valuesEqual(origValue, newValue)) return;
 
     const before = snapshot();
     const queue   = [{ q: startQ, r: startR }];
@@ -1050,10 +1112,10 @@
 
     while (queue.length) {
       const { q, r } = queue.pop();
-      L().grid.set(key(q, r), currentBiome);
+      tMap.set(key(q, r), newValue);
       for (const nb of neighbors(q, r)) {
         const nk = key(nb.q, nb.r);
-        if (!visited.has(nk) && L().grid.has(nk) && L().grid.get(nk) === origBiome) {
+        if (!visited.has(nk) && L().grid.has(nk) && valuesEqual(tMap.get(nk) ?? null, origValue)) {
           visited.add(nk);
           queue.push(nb);
         }
@@ -1178,6 +1240,24 @@
       }
     }
 
+    // Zone-of-influence style overlay for whichever attribute is being
+    // painted right now (e.g. faction territory) — tinted over the terrain.
+    if (currentPaintTarget !== 'biome') {
+      for (const [k, value] of attrGridReadonly(currentPaintTarget)) {
+        const [q, r] = k.split(',').map(Number);
+        const { x, y } = hexToPixel(q, r, size);
+        const sx = x + cxOff, sy = y + cyOff;
+        if (sx < -margin || sx > canvas.width  + margin) continue;
+        if (sy < -margin || sy > canvas.height + margin) continue;
+        ctx.save();
+        traceHexPath(sx, sy, size - 0.5);
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = value.color;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
     // Routes (rivers, roads, ley lines, ...) drawn on top of terrain
     for (const route of L().routes) {
       drawRoute(route, size, cxOff, cyOff);
@@ -1254,15 +1334,31 @@
 
   // ── Tools ─────────────────────────────────────────────────────────────────
   function applyTool(q, r) {
+    const onBiome = currentPaintTarget === 'biome';
+
     if (currentTool === 'paint') {
-      L().grid.set(key(q, r), currentBiome);
+      if (onBiome) {
+        L().grid.set(key(q, r), currentBiome);
+      } else if (currentAttrValue && L().grid.has(key(q, r))) {
+        // Attributes describe existing terrain, not empty space.
+        attrGrid(currentPaintTarget).set(key(q, r), currentAttrValue);
+      }
     } else if (currentTool === 'erase') {
-      L().grid.delete(key(q, r));
-      const hitRoute = findRouteAt(q, r);
-      if (hitRoute) L().routes = L().routes.filter(rt => rt.id !== hitRoute.id);
+      if (onBiome) {
+        L().grid.delete(key(q, r));
+        const hitRoute = findRouteAt(q, r);
+        if (hitRoute) L().routes = L().routes.filter(rt => rt.id !== hitRoute.id);
+      } else {
+        attrGrid(currentPaintTarget).delete(key(q, r));
+      }
     } else if (currentTool === 'pick') {
-      const b = L().grid.get(key(q, r));
-      if (b) { currentBiome = b; updatePalette(); updateSelectedInfo(); }
+      if (onBiome) {
+        const b = L().grid.get(key(q, r));
+        if (b) { currentBiome = b; updatePalette(); updateSelectedInfo(); }
+      } else {
+        const v = attrGridReadonly(currentPaintTarget).get(key(q, r));
+        if (v) { currentAttrValue = v; updateAttributePalette(); updateSelectedInfo(); }
+      }
     }
     scheduleRender();
   }
@@ -1315,6 +1411,26 @@
     layer.hexLinks = m;
   }
 
+  function attributesToArray(layer) {
+    const result = [];
+    for (const [attrKey, m] of layer.attributes) {
+      for (const [k, value] of m) {
+        const [q, r] = k.split(',').map(Number);
+        result.push({ attrKey, q, r, value });
+      }
+    }
+    return result;
+  }
+
+  function arrayToAttributes(layer, arr) {
+    const m = new Map();
+    for (const { attrKey, q, r, value } of (arr || [])) {
+      if (!m.has(attrKey)) m.set(attrKey, new Map());
+      m.get(attrKey).set(key(q, r), value);
+    }
+    layer.attributes = m;
+  }
+
   function getMapName() {
     return document.getElementById('hx-input-name')?.value || 'Untitled Hex Map';
   }
@@ -1325,6 +1441,7 @@
       name: l.name,
       hexes: gridToArray(l),
       hexLinks: hexLinksToArray(l),
+      attributes: attributesToArray(l),
       routes: l.routes,
     }));
   }
@@ -1432,6 +1549,7 @@
           if (rec.id) l.id = rec.id;
           arrayToGrid(l, rec.hexes || []);
           arrayToHexLinks(l, rec.hexLinks || rec.hexArticles || []);
+          arrayToAttributes(l, rec.attributes || []);
           l.routes = rec.routes || [];
           return l;
         });
@@ -1549,6 +1667,56 @@
     });
   }
 
+  // ── Attribute palette — swatches pulled live from a library item type ─────
+  // (e.g. every saved "faction") rather than a hardcoded list like biomes/routes.
+  async function buildAttributePalette() {
+    const el = document.getElementById('hx-attribute-palette');
+    if (!el) return;
+    const requestedKey = currentAttributeType;
+    const def = ATTRIBUTE_TYPES[requestedKey];
+    if (!def || !window.hxStorage) { el.innerHTML = ''; return; }
+
+    const items = await window.hxStorage.getByType(def.sourceType);
+    // currentAttributeType may have changed (or the tab closed) while this fetch was in flight
+    if (currentAttributeType !== requestedKey) return;
+
+    el.innerHTML = '';
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'hx-links-empty';
+      empty.textContent = `No ${def.label.toLowerCase()}s saved yet. Create one, then come back to paint it on.`;
+      el.appendChild(empty);
+      return;
+    }
+
+    for (const it of items) {
+      const value = { id: it.id, name: it.name, color: it.data?.color || '#888' };
+      const item = document.createElement('div');
+      item.className = 'hx-pal-item' + (currentAttrValue?.id === value.id ? ' selected' : '');
+      item.dataset.attrId = value.id;
+      const swatch = document.createElement('span');
+      swatch.className = 'hx-pal-swatch';
+      swatch.style.background = value.color;
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(value.name));
+      item.addEventListener('click', () => {
+        currentAttrValue   = value;
+        currentPaintTarget = currentAttributeType;
+        currentTool        = 'paint';
+        updateAttributePalette();
+        updateSelectedInfo();
+        updateToolbar();
+      });
+      el.appendChild(item);
+    }
+  }
+
+  function updateAttributePalette() {
+    document.querySelectorAll('#hx-attribute-palette .hx-pal-item').forEach(el => {
+      el.classList.toggle('selected', el.dataset.attrId === currentAttrValue?.id);
+    });
+  }
+
   function updateSelectedInfo() {
     const swatch = document.getElementById('hx-selected-tile-swatch');
     const name   = document.getElementById('hx-selected-tile-name');
@@ -1556,6 +1724,11 @@
       const def = ROUTE_TYPES[currentRouteType];
       if (swatch) swatch.style.background = routeTypeColors[currentRouteType] ?? def?.color ?? '#111';
       if (name)   name.textContent = def?.label ?? currentRouteType;
+      return;
+    }
+    if (currentPaintTarget !== 'biome') {
+      if (swatch) swatch.style.background = currentAttrValue?.color ?? '#111';
+      if (name)   name.textContent = currentAttrValue?.name ?? 'None selected';
       return;
     }
     if (swatch) swatch.style.background = BIOMES[currentBiome]?.color ?? '#111';
@@ -1982,6 +2155,23 @@
     window.hexmapToggleGhostAbove = toggleGhostAbove;
     window.hexmapToggleGhostBelow = toggleGhostBelow;
 
+    // Entering attribute mode points paint/erase/fill/radius/pick at the given
+    // attribute layer instead of the biome grid, and shows its overlay tint.
+    window.hexmapEnterAttributeMode = function (attrKey) {
+      if (!ATTRIBUTE_TYPES[attrKey]) return;
+      currentAttributeType = attrKey;
+      currentPaintTarget   = attrKey;
+      currentAttrValue     = null;
+      buildAttributePalette();
+      updateSelectedInfo();
+      scheduleRender();
+    };
+
+    window.hexmapExitAttributeMode = function () {
+      currentPaintTarget = 'biome';
+      scheduleRender();
+    };
+
     window.cleanupHexmap = function () {
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('keyup',   onKeyUp);
@@ -2017,6 +2207,8 @@
       window.hexmapReorderLayer      = null;
       window.hexmapToggleGhostAbove  = null;
       window.hexmapToggleGhostBelow  = null;
+      window.hexmapEnterAttributeMode = null;
+      window.hexmapExitAttributeMode  = null;
       window.__hexmapOnHexHover      = null;
     };
   }

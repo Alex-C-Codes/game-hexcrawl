@@ -6,7 +6,7 @@
 create table if not exists public.library_items (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  type       text not null check (type in ('hexmap','battlemap','voxel3d','article','settlement')),
+  type       text not null check (type in ('hexmap','battlemap','voxel3d','article','settlement','faction')),
   name       text not null default 'Untitled',
   data       jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
@@ -39,3 +39,12 @@ drop trigger if exists library_items_set_updated_at on public.library_items;
 create trigger library_items_set_updated_at
 before update on public.library_items
 for each row execute function public.set_updated_at();
+
+-- =============================================================
+--  Migration: add 'faction' as a library item type.
+--  CREATE TABLE IF NOT EXISTS above is a no-op on an existing table, so run
+--  this separately against a database that already has library_items.
+-- =============================================================
+alter table public.library_items drop constraint if exists library_items_type_check;
+alter table public.library_items add constraint library_items_type_check
+  check (type in ('hexmap','battlemap','voxel3d','article','settlement','faction'));
