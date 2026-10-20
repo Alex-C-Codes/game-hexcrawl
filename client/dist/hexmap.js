@@ -1936,10 +1936,12 @@
     scheduleRender();
   }
 
-  function onDragLeave(e) {
-    // Ignore leave events caused by moving to a child element
-    if (e.relatedTarget && canvas.contains(e.relatedTarget)) return;
-    dragTargetHex = null;
+  function onDragLeave() {
+    // Only clear the visual highlight here, not dragTargetHex — a <canvas> has
+    // no children, so browsers routinely fire a spurious dragleave/dragenter
+    // pair mid-drag (fast mouse movement, compositing jitter) even while the
+    // cursor never actually left the element. Nulling the target on every one
+    // of those made drops land on nothing seemingly at random.
     hoverHex = null;
     scheduleRender();
   }
@@ -1947,7 +1949,10 @@
   function onDrop(e) {
     e.preventDefault();
     const raw = e.dataTransfer.getData('application/hexmap-link');
-    const target = dragTargetHex;
+    // The drop event's own position is accurate in Chrome/Safari and should
+    // win; Firefox is known to report (0,0) on drop, so fall back to the last
+    // real dragover position only in that case rather than trusting it blindly.
+    const target = (e.clientX || e.clientY) ? hexFromEvent(e) : dragTargetHex;
     dragTargetHex = null;
     hoverHex = null;
     if (!raw || !target) { scheduleRender(); return; }
