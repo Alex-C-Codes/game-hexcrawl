@@ -1,0 +1,108 @@
+/* Creature / item editor */
+#entry-root {
+  background: #111;
+  min-height: 100vh;
+  font-family: Georgia, serif;
+  padding-top: 80px;
+  color: #e0d8c8;
+}
+#entry-root .en-wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 60px; }
+
+#entry-root .en-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+#entry-root h1 { color: #c9a84c; font-size: 1.2rem; letter-spacing: 0.15em; text-transform: uppercase; margin: 0; }
+#entry-root .en-system { display: flex; align-items: center; gap: 6px; color: #8a8070; font-size: 0.74rem; }
+#entry-root .en-system select { margin: 0; width: auto; }
+#entry-root .en-saved { color: #3a3830; font-size: 0.74rem; }
+#entry-root .en-saved.dirty { color: #c9a84c; }
+#entry-root .en-error { color: #d07060; font-size: 0.78rem; margin: -10px 0 14px; }
+
+#entry-root .en-btn {
+  background: none; border: 1px solid #3a3020; border-radius: 4px; color: #c9a84c;
+  font-family: Georgia, serif; font-size: 0.78rem; padding: 6px 18px; cursor: pointer;
+}
+#entry-root .en-btn.primary { background: #1e1a0c; border-color: #c9a84c; }
+#entry-root .en-btn.small { font-size: 0.7rem; padding: 3px 10px; }
+#entry-root .en-btn:hover { background: #241e0e; }
+
+#entry-root .en-columns { display: flex; gap: 28px; align-items: flex-start; }
+#entry-root .en-form { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+#entry-root .en-preview-col { width: 360px; flex-shrink: 0; position: sticky; top: 80px; }
+@media (max-width: 900px) {
+  #entry-root .en-columns { flex-direction: column; }
+  #entry-root .en-preview-col { width: 100%; position: static; }
+}
+
+#entry-root input[type="text"],
+#entry-root input[type="number"],
+#entry-root select,
+#entry-root textarea {
+  display: block; width: 100%; margin-top: 4px; box-sizing: border-box;
+  background: #181510; border: 1px solid #3a3020; border-radius: 4px; color: #e0d8c8;
+  font-family: Georgia, serif; font-size: 0.85rem; padding: 7px 10px; outline: none;
+}
+#entry-root textarea { resize: vertical; }
+#entry-root input:focus, #entry-root select:focus, #entry-root textarea:focus { border-color: #8a7038; }
+
+#entry-root .en-field { display: block; color: #8a8070; font-size: 0.75rem; min-width: 0; }
+#entry-root .en-field em, #entry-root .en-section-head em { color: #4a4540; font-style: normal; }
+#entry-root .en-check { display: flex; align-items: center; gap: 8px; padding-top: 20px; cursor: pointer; }
+#entry-root .en-check input { accent-color: #c9a84c; }
+
+#entry-root .en-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+@media (max-width: 600px) {
+  #entry-root .en-grid { grid-template-columns: 1fr 1fr; }
+  #entry-root .en-grid > * { grid-column: span 2 !important; }
+}
+
+#entry-root .en-abilities { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 4px; }
+@media (max-width: 600px) { #entry-root .en-abilities { grid-template-columns: repeat(3, 1fr); } }
+#entry-root .en-ability {
+  background: #0d0d18; border: 1px solid #2a2a3a; border-radius: 6px; padding: 6px; text-align: center;
+}
+#entry-root .en-ability-label { color: #c9a84c; font-size: 0.68rem; letter-spacing: 0.1em; }
+#entry-root .en-ability input { text-align: center; padding: 4px; }
+#entry-root .en-ability-mod { color: #e0d8c8; font-size: 0.9rem; margin: 4px 0 2px; }
+#entry-root .en-ability-save { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 0.64rem; color: #6a6050; cursor: pointer; }
+#entry-root .en-ability-save input { margin: 0; accent-color: #c9a84c; }
+
+#entry-root .en-section-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  color: #8a8070; font-size: 0.75rem; margin-bottom: 8px; border-bottom: 1px solid #1e1c18; padding-bottom: 4px;
+}
+#entry-root .en-row {
+  display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px;
+  background: #0d0d18; border: 1px solid #2a2a3a; border-radius: 6px; padding: 10px;
+}
+#entry-root .en-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+#entry-root .en-row input, #entry-root .en-row textarea { margin-top: 0; }
+#entry-root .en-custom input:first-child { flex: 0 0 34%; }
+#entry-root .en-remove { background: none; border: none; color: #5a3030; font-size: 0.95rem; cursor: pointer; padding: 4px 2px; }
+#entry-root .en-remove:hover { color: #c05050; }
+
+/* ── Stat-block preview ── */
+#entry-root .pv-block {
+  background: #1a1712; border: 1px solid #3a3020; border-top: 3px solid #8a3a2a; border-bottom: 3px solid #8a3a2a;
+  border-radius: 4px; padding: 14px 16px; font-size: 0.8rem; line-height: 1.45; color: #d8ccb4;
+}
+#entry-root .pv-item { border-top-color: #3a6a90; border-bottom-color: #3a6a90; }
+#entry-root .pv-name { color: #d4a44c; font-size: 1.15rem; font-variant: small-caps; letter-spacing: 0.04em; font-weight: bold; }
+#entry-root .pv-sub { font-style: italic; color: #a09070; font-size: 0.76rem; }
+#entry-root .pv-desc { margin-top: 6px; color: #9a9080; font-size: 0.76rem; }
+#entry-root .pv-rule { height: 2px; background: linear-gradient(90deg, #8a3a2a, transparent); margin: 8px 0; }
+#entry-root .pv-item .pv-rule { background: linear-gradient(90deg, #3a6a90, transparent); }
+#entry-root .pv-lines { margin: 6px 0; }
+#entry-root .pv-lines b { color: #d4a44c; }
+
+#entry-root .pv-abilities { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.74rem; text-align: center; }
+#entry-root .pv-abilities th { color: #8a7a5a; font-weight: normal; font-size: 0.6rem; letter-spacing: 0.06em; padding: 2px; }
+#entry-root .pv-abilities tbody th { color: #d4a44c; font-weight: bold; font-size: 0.7rem; text-align: left; }
+#entry-root .pv-abilities td { padding: 2px; background: #221d16; border: 1px solid #1a1712; }
+#entry-root .pv-abilities td.prof { color: #e8c870; font-weight: bold; }
+
+#entry-root .pv-section { margin-top: 10px; }
+#entry-root .pv-section-title {
+  color: #d4a44c; font-variant: small-caps; font-size: 0.95rem; letter-spacing: 0.04em;
+  border-bottom: 1px solid #5a3a2a; margin-bottom: 4px;
+}
+#entry-root .pv-section p { margin: 0 0 5px; }
+#entry-root .pv-section b { color: #e0d0b0; }

@@ -11,6 +11,7 @@ import SettlementPage         from './pages/SettlementPage';
 import LoginPage              from './pages/LoginPage';
 import ResetPasswordPage      from './pages/ResetPasswordPage';
 import FactionPage            from './pages/FactionPage';
+import EntryEditorPage        from './pages/EntryEditorPage';
 import Navbar                 from './components/NavBar';
 import ProtectedRoute         from './components/ProtectedRoute';
 import { AuthProvider }       from './lib/AuthContext';
@@ -44,6 +45,8 @@ export default function App() {
               <Route path="/create/voxel3d"           element={<Voxel3DPage />} />
               <Route path="/create/settlement"        element={<SettlementPage />} />
               <Route path="/create/faction"            element={<FactionPage />} />
+              <Route path="/create/creature"           element={<EntryEditorPage key="creature" kind="creature" />} />
+              <Route path="/create/item"               element={<EntryEditorPage key="item" kind="item" />} />
               <Route path="/library"                   element={<LibraryPage />} />
             </Route>
           </Route>

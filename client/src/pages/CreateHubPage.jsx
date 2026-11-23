@@ -45,6 +45,20 @@ const TYPES = [
     href: '/create/faction',
     desc: 'Define a faction’s name, color, and encounters, then paint its zone of influence onto your hex map.',
   },
+  {
+    key: 'creature',
+    title: 'Creature',
+    icon: '🐉',
+    href: '/create/creature',
+    desc: 'Build monsters and NPCs with full stat blocks — any system, with 5.5e built in. Drop them onto battlemap squares.',
+  },
+  {
+    key: 'item',
+    title: 'Item',
+    icon: '💎',
+    href: '/create/item',
+    desc: 'Create magic items, loot, and gear with rarity, attunement, and properties. Place them in your dungeons.',
+  },
 ];
 
 const cardStyle = {
