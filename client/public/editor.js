@@ -4,12 +4,27 @@ const TILE_SIZE = 24;
 
 const TILES = {
   stone:       { label: 'Wall',       color: '#1e1c19', passable: false, cat: 'Terrain',   sym: null },
-  floor:       { label: 'Floor',      color: '#7a6a58', passable: true,  cat: 'Terrain',   sym: null },
   air:         { label: 'Open Air',   color: '#1a2d44', passable: true,  cat: 'Terrain',   sym: '↕'  },
-  corridor:    { label: 'Corridor',   color: '#5a4a38', passable: true,  cat: 'Terrain',   sym: null },
   water:       { label: 'Water',      color: '#1a3a5a', passable: false, cat: 'Terrain',   sym: ''   },
   lava:        { label: 'Lava',       color: '#7a1a0a', passable: false, cat: 'Terrain',   sym: ''   },
   pit:         { label: 'Pit',        color: '#080706', passable: false, cat: 'Terrain',   sym: 'O'  },
+  // Floors — `pattern` picks a texture in drawTilePattern(); `difficult` adds a corner flag
+  floor:       { label: 'Floor',         color: '#7a6a58', passable: true, cat: 'Floors', sym: null },
+  corridor:    { label: 'Corridor',      color: '#5a4a38', passable: true, cat: 'Floors', sym: null },
+  flagstone:   { label: 'Flagstone',     color: '#6e665a', passable: true, cat: 'Floors', sym: null, pattern: 'flagstone' },
+  cobblestone: { label: 'Cobblestone',   color: '#5e5850', passable: true, cat: 'Floors', sym: null, pattern: 'cobble' },
+  wood:        { label: 'Wood Planks',   color: '#7a5634', passable: true, cat: 'Floors', sym: null, pattern: 'planks' },
+  marble:      { label: 'Marble',        color: '#a8a296', passable: true, cat: 'Floors', sym: null, pattern: 'marble' },
+  checker:     { label: 'Checker Tile',  color: '#6a6258', passable: true, cat: 'Floors', sym: null, pattern: 'checker' },
+  carpet:      { label: 'Carpet',        color: '#6a2228', passable: true, cat: 'Floors', sym: null, pattern: 'carpet' },
+  grate:       { label: 'Iron Grate',    color: '#3c3c3a', passable: true, cat: 'Floors', sym: null, pattern: 'grate' },
+  dirt:        { label: 'Dirt',          color: '#5e4a32', passable: true, cat: 'Floors', sym: null, pattern: 'speckle' },
+  sand:        { label: 'Sand',          color: '#a08a5c', passable: true, cat: 'Floors', sym: null, pattern: 'speckle' },
+  moss:        { label: 'Moss',          color: '#3e5232', passable: true, cat: 'Floors', sym: null, pattern: 'tufts' },
+  rubble:      { label: 'Rubble',        color: '#58524a', passable: true, cat: 'Floors', sym: null, pattern: 'rubble',  difficult: true },
+  mud:         { label: 'Mud',           color: '#3e3022', passable: true, cat: 'Floors', sym: null, pattern: 'speckle', difficult: true },
+  ice:         { label: 'Ice',           color: '#7a9cac', passable: true, cat: 'Floors', sym: null, pattern: 'cracks',  difficult: true },
+  shallows:    { label: 'Shallow Water', color: '#2e5a6a', passable: true, cat: 'Floors', sym: null, pattern: 'ripples', difficult: true },
   door:        { label: 'Door',       color: '#8a5525', passable: true,  cat: 'legacy',    sym: 'D'  },
   bars:        { label: 'Iron Bars',  color: '#3a3838', passable: false, cat: 'Structure', sym: '|'  },
   pillar:      { label: 'Pillar',     color: '#2a2820', passable: false, cat: 'Structure', sym: '#'  },
@@ -23,7 +38,7 @@ const TILES = {
   spawn:       { label: 'Spawn',      color: '#4a1a4a', passable: true,  cat: 'Markers',   sym: 'X'  },
 };
 
-const TILE_CATS = ['Terrain', 'Structure', 'Feature', 'Markers'];
+const TILE_CATS = ['Floors', 'Terrain', 'Structure', 'Feature', 'Markers'];
 const STONE_COLOR = '#1e1c19';
 
 // ── Level system ───────────────────────────────────────────────────────────────
@@ -38,6 +53,8 @@ const TOKEN_TYPES = {
   article:  { label: 'Article',  color: '#c9a84c', shape: 'square'  },
   item:     { label: 'Item',     color: '#4a9ad0', shape: 'diamond' },
   creature: { label: 'Creature', color: '#c05050', shape: 'circle'  },
+  // Notes live only on the map: no refId, and they carry their own `text`
+  note:     { label: 'Note',     color: '#d8c47a', shape: 'note'    },
 };
 const TOKEN_DRAG_MIME = 'application/battlemap-token';
 
@@ -62,7 +79,8 @@ const markerTool = { type: 'number', color: '#c9a84c' };
 let selectedMarkerId = null;
 let markerDragState  = null; // { mode:'move'|'resize', startCx, startCy, origX?, origY?, mPx?, mPy?, origSize?, origDist?, undoSaved }
 let tokens           = levels[0].tokens;
-let tokenDragState   = null; // { id, undoSaved }
+let tokenDragState   = null; // { id, undoSaved } — undoSaved doubles as "has moved"
+let hoverNoteId      = null;
 let dropHoverTile    = null; // tile under an in-progress drag from the content panel
 let doorHover = null;
 let wallHover = null;
@@ -122,6 +140,7 @@ function loadLevelRefs(lv) {
   undoStack = lv.undo; redoStack = lv.redo;
   doorHover = null; wallHover = null;
   selectedMarkerId = null; markerDragState = null; tokenDragState = null;
+  setNoteHover(null);
   notifyTokensChanged();
 }
 
@@ -721,6 +740,11 @@ function traceTokenShape(shape, x, y, r) {
   ctx.beginPath();
   if (shape === 'diamond') {
     ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath();
+  } else if (shape === 'note') {
+    // Page with a folded top-right corner
+    const h = r * 0.9, f = r * 0.45;
+    ctx.moveTo(x - h, y - h); ctx.lineTo(x + h - f, y - h); ctx.lineTo(x + h, y - h + f);
+    ctx.lineTo(x + h, y + h); ctx.lineTo(x - h, y + h); ctx.closePath();
   } else if (shape === 'square') {
     const h = r * 0.86;
     ctx.rect(x - h, y - h, h * 2, h * 2);
@@ -741,8 +765,17 @@ function renderTokens(s) {
       ctx.fillStyle = 'rgba(14,12,9,0.94)'; ctx.fill();
       ctx.strokeStyle = dragging ? '#ffd700' : (overflow ? '#8a8070' : def.color);
       ctx.lineWidth = Math.max(1.2, r * 0.2); ctx.stroke();
-      const label = overflow ? `+${overflow}` : ((token.name || def.label).trim()[0] || '?').toUpperCase();
       ctx.fillStyle = dragging ? '#ffd700' : (overflow ? '#c8b898' : def.color);
+      if (token.type === 'note' && !overflow) {
+        // Text lines instead of a letter
+        const w = r * 0.9;
+        for (let i = 0; i < 3; i++) {
+          const ly = y - r * 0.38 + i * r * 0.38;
+          ctx.fillRect(x - w * 0.6, ly - r * 0.05, (i === 2 ? w * 0.7 : w * 1.2), Math.max(1, r * 0.1));
+        }
+        continue;
+      }
+      const label = overflow ? `+${overflow}` : ((token.name || def.label).trim()[0] || '?').toUpperCase();
       ctx.font = `bold ${Math.max(6, Math.round(r * (overflow ? 0.8 : 1.05)))}px Georgia, serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(label, x, y + r * 0.06);
@@ -760,6 +793,7 @@ function renderTokens(s) {
 }
 
 function hasDuplicateToken(tok, x, y, ignoreId) {
+  if (tok.type === 'note') return false; // several notes may share a square
   return tokens.some(t => t.id !== ignoreId && t.x === x && t.y === y && t.type === tok.type && t.refId === tok.refId);
 }
 
@@ -767,6 +801,39 @@ function removeToken(id) {
   if (!tokens.some(t => t.id === id)) return;
   saveUndo();
   tokens = tokens.filter(t => t.id !== id);
+  commitLevel();
+  notifyTokensChanged(); scheduleRender();
+}
+
+// ── Notes ──────────────────────────────────────────────────────────────────────
+// Screen anchor (viewport coords) just right of a square, for React popovers.
+function tileClientAnchor(x, y) {
+  const rect = canvas.getBoundingClientRect();
+  const { x: sx, y: sy } = toScreen(x + 1, y);
+  return { screenX: rect.left + sx, screenY: rect.top + sy };
+}
+
+// Ask React to open the note editor — for an existing note, or a new one at (x, y).
+function openNoteEditor(noteOrTile) {
+  setNoteHover(null);
+  const n = noteOrTile.id ? noteOrTile : { x: noteOrTile.x, y: noteOrTile.y, name: '', text: '' };
+  window.__editorOnNoteEdit?.({ id: n.id ?? null, x: n.x, y: n.y, name: n.name || '', text: n.text || '', ...tileClientAnchor(n.x, n.y) });
+}
+
+function setNoteHover(note) {
+  const id = note?.id ?? null;
+  if (id === hoverNoteId) return;
+  hoverNoteId = id;
+  window.__editorOnNoteHover?.(note ? { ...note, ...tileClientAnchor(note.x, note.y) } : null);
+}
+
+function saveNote({ id, x, y, name, text }) {
+  saveUndo();
+  const title = (name || '').trim();
+  const body  = (text || '').trim();
+  const existing = id && tokens.find(t => t.id === id);
+  if (existing) { existing.name = title; existing.text = body; }
+  else tokens.push({ id: crypto.randomUUID(), x, y, type: 'note', refId: null, name: title, text: body });
   commitLevel();
   notifyTokensChanged(); scheduleRender();
 }
@@ -820,6 +887,182 @@ function scheduleRender() {
   if (!rafPending) { rafPending = true; requestAnimationFrame(() => { rafPending = false; render(); }); }
 }
 
+// ── Floor textures ─────────────────────────────────────────────────────────────
+// Drawn over the tile's base colour with translucent light/dark strokes so each
+// texture works with any base colour. Per-tile variation comes from tileNoise(),
+// so a tile always looks the same frame to frame. `g` (the tile grid) lets
+// carpet draw a border only where it meets a non-carpet square; pass null for
+// a standalone swatch.
+function drawTilePattern(c, def, tileKey, sx, sy, s, tx, ty, g) {
+  const n = i => tileNoise(tx, ty, i * 7919 + 101);
+  const lw = Math.max(0.6, s * 0.035);
+  switch (def.pattern) {
+    case 'planks': {
+      const rows = 3, h = s / rows;
+      c.fillStyle = 'rgba(255,230,190,0.06)';
+      c.fillRect(sx, sy + Math.floor(n(9) * rows) * h, s, h);
+      c.strokeStyle = 'rgba(30,15,5,0.45)'; c.lineWidth = lw;
+      c.beginPath();
+      for (let r = 0; r < rows; r++) {
+        const y = sy + r * h;
+        c.moveTo(sx, y); c.lineTo(sx + s, y);
+        if (n(r + 1) < 0.6) {
+          const x = sx + (0.15 + 0.7 * n(r + 11)) * s;
+          c.moveTo(x, y); c.lineTo(x, y + h);
+        }
+      }
+      c.stroke();
+      break;
+    }
+    case 'flagstone': {
+      const vert = n(1) < 0.5, p = 0.35 + 0.3 * n(2);
+      const stones = vert ? [[0, 0, p, 1], [p, 0, 1 - p, 1]] : [[0, 0, 1, p], [0, p, 1, 1 - p]];
+      c.lineWidth = Math.max(1, s * 0.07);
+      c.strokeStyle = 'rgba(0,0,0,0.42)';
+      stones.forEach(([x, y, w, h], i) => {
+        const shade = n(3 + i) - 0.5;
+        c.fillStyle = shade > 0 ? `rgba(255,245,225,${shade * 0.16})` : `rgba(0,0,0,${-shade * 0.2})`;
+        c.fillRect(sx + x * s, sy + y * s, w * s, h * s);
+        c.strokeRect(sx + x * s, sy + y * s, w * s, h * s);
+      });
+      break;
+    }
+    case 'cobble': {
+      const k = s >= 16 ? 3 : 2;
+      c.lineWidth = Math.max(0.6, s * 0.04);
+      c.strokeStyle = 'rgba(0,0,0,0.5)';
+      for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) {
+        const idx = j * k + i;
+        const cx = sx + ((i + 0.5) / k + (n(idx) - 0.5) * 0.12) * s;
+        const cy = sy + ((j + 0.5) / k + (n(idx + 20) - 0.5) * 0.12) * s;
+        const r = (s / k / 2) * (0.72 + n(idx + 40) * 0.2);
+        c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2);
+        c.fillStyle = n(idx + 60) < 0.5 ? 'rgba(255,245,225,0.12)' : 'rgba(0,0,0,0.12)';
+        c.fill(); c.stroke();
+      }
+      break;
+    }
+    case 'checker': {
+      const h = s / 2;
+      c.fillStyle = 'rgba(255,250,235,0.16)';
+      c.fillRect(sx, sy, h, h); c.fillRect(sx + h, sy + h, h, h);
+      c.fillStyle = 'rgba(0,0,0,0.18)';
+      c.fillRect(sx + h, sy, h, h); c.fillRect(sx, sy + h, h, h);
+      break;
+    }
+    case 'marble': {
+      c.strokeStyle = 'rgba(255,255,255,0.22)'; c.lineWidth = lw;
+      c.strokeRect(sx + 0.5, sy + 0.5, s - 1, s - 1);
+      if (n(1) < 0.65) {
+        c.strokeStyle = 'rgba(70,70,85,0.3)'; c.lineWidth = Math.max(0.5, s * 0.025);
+        c.beginPath();
+        c.moveTo(sx, sy + n(2) * s);
+        c.bezierCurveTo(sx + s * 0.35, sy + n(3) * s, sx + s * 0.65, sy + n(4) * s, sx + s, sy + n(5) * s);
+        c.stroke();
+      }
+      break;
+    }
+    case 'carpet': {
+      const edge = (dx, dy) => !g || g.get(key(tx + dx, ty + dy)) !== tileKey;
+      const L = edge(-1, 0), R = edge(1, 0), T = edge(0, -1), B = edge(0, 1);
+      const band = s * 0.16;
+      c.fillStyle = 'rgba(0,0,0,0.28)';
+      if (L) c.fillRect(sx, sy, band, s);
+      if (R) c.fillRect(sx + s - band, sy, band, s);
+      if (T) c.fillRect(sx, sy, s, band);
+      if (B) c.fillRect(sx, sy + s - band, s, band);
+      c.strokeStyle = 'rgba(220,180,90,0.55)'; c.lineWidth = Math.max(0.8, s * 0.045);
+      c.beginPath();
+      if (L) { c.moveTo(sx + band, sy + (T ? band : 0)); c.lineTo(sx + band, sy + s - (B ? band : 0)); }
+      if (R) { c.moveTo(sx + s - band, sy + (T ? band : 0)); c.lineTo(sx + s - band, sy + s - (B ? band : 0)); }
+      if (T) { c.moveTo(sx + (L ? band : 0), sy + band); c.lineTo(sx + s - (R ? band : 0), sy + band); }
+      if (B) { c.moveTo(sx + (L ? band : 0), sy + s - band); c.lineTo(sx + s - (R ? band : 0), sy + s - band); }
+      c.stroke();
+      const m = s * 0.16, cx = sx + s / 2, cy = sy + s / 2;
+      c.fillStyle = 'rgba(220,180,90,0.22)';
+      c.beginPath(); c.moveTo(cx, cy - m); c.lineTo(cx + m, cy); c.lineTo(cx, cy + m); c.lineTo(cx - m, cy); c.closePath(); c.fill();
+      break;
+    }
+    case 'grate': {
+      c.fillStyle = 'rgba(0,0,0,0.55)';
+      const bars = 4, w = Math.max(1, s * 0.09);
+      for (let i = 0; i < bars; i++) for (let j = 0; j < bars; j++) {
+        const cw = s / bars;
+        c.fillRect(sx + i * cw + w / 2, sy + j * cw + w / 2, cw - w, cw - w);
+      }
+      break;
+    }
+    case 'speckle': {
+      const light = tileKey === 'sand';
+      const dot = Math.max(0.8, s * 0.055);
+      for (let i = 0; i < 6; i++) {
+        c.fillStyle = (i % 2) === (light ? 1 : 0) ? 'rgba(255,240,210,0.16)' : 'rgba(0,0,0,0.25)';
+        c.fillRect(sx + n(i) * (s - dot), sy + n(i + 10) * (s - dot), dot, dot);
+      }
+      if (tileKey === 'mud' && n(30) < 0.5) {
+        c.fillStyle = 'rgba(120,140,150,0.12)';
+        c.beginPath(); c.ellipse(sx + s * (0.3 + 0.4 * n(31)), sy + s * (0.3 + 0.4 * n(32)), s * 0.22, s * 0.12, 0, 0, Math.PI * 2); c.fill();
+      }
+      break;
+    }
+    case 'tufts': {
+      c.strokeStyle = 'rgba(150,200,100,0.45)'; c.lineWidth = Math.max(0.6, s * 0.035);
+      c.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const x = sx + (0.15 + 0.7 * n(i)) * s, y = sy + (0.25 + 0.6 * n(i + 10)) * s, h = s * 0.14;
+        c.moveTo(x - h * 0.6, y - h); c.lineTo(x, y); c.lineTo(x + h * 0.6, y - h);
+        c.moveTo(x, y); c.lineTo(x, y - h * 1.2);
+      }
+      c.stroke();
+      break;
+    }
+    case 'rubble': {
+      for (let i = 0; i < 5; i++) {
+        const x = sx + (0.12 + 0.76 * n(i)) * s, y = sy + (0.12 + 0.76 * n(i + 10)) * s;
+        const r = s * (0.07 + 0.08 * n(i + 20)), a = n(i + 30) * Math.PI;
+        c.fillStyle = i % 2 ? 'rgba(255,245,225,0.18)' : 'rgba(0,0,0,0.38)';
+        c.beginPath();
+        c.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+        c.lineTo(x + Math.cos(a + 2.1) * r, y + Math.sin(a + 2.1) * r);
+        c.lineTo(x + Math.cos(a + 4.2) * r, y + Math.sin(a + 4.2) * r);
+        c.closePath(); c.fill();
+      }
+      break;
+    }
+    case 'cracks': {
+      if (n(9) < 0.4) {
+        c.fillStyle = 'rgba(255,255,255,0.07)';
+        c.beginPath(); c.moveTo(sx, sy + s * 0.6); c.lineTo(sx + s * 0.6, sy); c.lineTo(sx + s * 0.8, sy); c.lineTo(sx, sy + s * 0.8); c.closePath(); c.fill();
+      }
+      c.strokeStyle = 'rgba(235,248,255,0.5)'; c.lineWidth = Math.max(0.5, s * 0.025);
+      c.beginPath();
+      let x = sx + n(1) * s, y = sy;
+      c.moveTo(x, y);
+      for (let i = 0; i < 3; i++) { x = sx + n(i + 2) * s; y = sy + ((i + 1) / 3) * s; c.lineTo(x, y); }
+      c.stroke();
+      break;
+    }
+    case 'ripples': {
+      c.strokeStyle = 'rgba(180,220,235,0.3)'; c.lineWidth = Math.max(0.6, s * 0.035);
+      c.beginPath();
+      for (let i = 0; i < 2; i++) {
+        const y = sy + (0.3 + 0.4 * i + (n(i) - 0.5) * 0.15) * s, x0 = sx + s * 0.15, x1 = sx + s * 0.85;
+        c.moveTo(x0, y);
+        c.quadraticCurveTo(x0 + (x1 - x0) * 0.25, y - s * 0.07, (x0 + x1) / 2, y);
+        c.quadraticCurveTo(x0 + (x1 - x0) * 0.75, y + s * 0.07, x1, y);
+      }
+      c.stroke();
+      break;
+    }
+  }
+  if (def.difficult && s >= 12) {
+    // Difficult-terrain flag in the bottom-right corner
+    const t = s * 0.17;
+    c.fillStyle = 'rgba(235,185,70,0.45)';
+    c.beginPath(); c.moveTo(sx + s, sy + s - t); c.lineTo(sx + s, sy + s); c.lineTo(sx + s - t, sy + s); c.closePath(); c.fill();
+  }
+}
+
 function renderTileGrid(tileGrid, s, alpha) {
   if (alpha !== undefined) ctx.globalAlpha = alpha;
   for (const [k, tileKey] of tileGrid) {
@@ -829,6 +1072,7 @@ function renderTileGrid(tileGrid, s, alpha) {
     const def = TILES[tileKey] || TILES.floor;
     ctx.fillStyle = def.color;
     ctx.fillRect(sx, sy, s, s);
+    if ((def.pattern || def.difficult) && s >= 8) drawTilePattern(ctx, def, tileKey, sx, sy, s, tx, ty, tileGrid);
     if (def.sym && s >= 14) {
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.font = `bold ${Math.max(8, Math.floor(s * 0.44))}px monospace`;
@@ -1006,7 +1250,7 @@ function updateStatus() {
   document.getElementById('status-pos').textContent  = mouse.onCanvas ? `(${mouse.tx}, ${mouse.ty})` : '';
   const here = mouse.onCanvas ? tokens.filter(tk => tk.x === mouse.tx && tk.y === mouse.ty) : [];
   const hereLabel = here.length ? ` · ${here.map(tk => tk.name || TOKEN_TYPES[tk.type]?.label).join(', ')}` : '';
-  document.getElementById('status-tile').textContent = t ? `Tile: ${TILES[t]?.label ?? t}${hereLabel}` : '';
+  document.getElementById('status-tile').textContent = t ? `Tile: ${TILES[t]?.label ?? t}${TILES[t]?.difficult ? ' (difficult)' : ''}${hereLabel}` : '';
   const snapIndicator = activeTool === 'rect' ? (rectOptions.snapGrid ? ' [snap]' : ' [free]') : '';
   document.getElementById('status-tool').textContent =
     spaceDown ? 'Tool: pan (space)' : `Tool: ${activeTool}${snapIndicator}`;
@@ -1040,10 +1284,17 @@ function onMouseDown(e) {
 
   // Token tool: left-drag a token to move it, right-click to remove it.
   // Right-click on empty space still falls through to panning.
-  if (activeTool === 'token' && !spaceDown && (e.button === 0 || e.button === 2)) {
+  // Note tool works the same on existing tokens; a click on an empty spot
+  // starts a new note there (a click without dragging on a note edits it — see onMouseUp).
+  if ((activeTool === 'token' || activeTool === 'note') && !spaceDown && (e.button === 0 || e.button === 2)) {
     const hit = tokenAtPoint(cx, cy);
     if (hit && e.button === 2) { removeToken(hit.id); return; }
-    if (hit && e.button === 0) { tokenDragState = { id: hit.id, undoSaved: false }; scheduleRender(); return; }
+    if (hit && e.button === 0) { setNoteHover(null); tokenDragState = { id: hit.id, undoSaved: false }; scheduleRender(); return; }
+    if (!hit && e.button === 0 && activeTool === 'note') {
+      mouse.down = false; mouse.btn = -1;
+      openNoteEditor({ x: tx, y: ty });
+      return;
+    }
   }
 
   // Wall/door/secret tools intercept L+R before the pan block
@@ -1194,6 +1445,12 @@ function onMouseMove(e) {
     }
   }
 
+  // Hover preview for notes (any tool, when not mid-drag)
+  if (!mouse.down) {
+    const hov = tokenAtPoint(cx, cy);
+    setNoteHover(hov?.type === 'note' ? hov : null);
+  }
+
   if (tokenDragState && mouse.down && mouse.btn === 0 && moved) {
     const tok = tokens.find(t => t.id === tokenDragState.id);
     if (tok) {
@@ -1226,6 +1483,13 @@ function onMouseUp(e) {
   }
   if (e.button === 0 && tokenDragState) {
     const tok = tokens.find(t => t.id === tokenDragState.id);
+    if (tok && !tokenDragState.undoSaved && tok.type === 'note' && activeTool === 'note') {
+      // Plain click (no drag) on a note → edit it
+      tokenDragState = null; scheduleRender();
+      openNoteEditor(tok);
+      if (e.button === mouse.btn) { mouse.down = false; mouse.btn = -1; }
+      return;
+    }
     // Moving onto a square that already holds the same content merges them
     if (tok && hasDuplicateToken(tok, tok.x, tok.y, tok.id)) tokens = tokens.filter(t => t.id !== tok.id);
     commitLevel();
@@ -1278,9 +1542,11 @@ function onDoubleClick(e) {
   if (activeTool === 'token') {
     const { cx, cy } = getPos(e);
     const hit = tokenAtPoint(cx, cy);
-    if (hit) window.__editorOnTokenOpen?.({ ...hit });
+    if (hit?.type === 'note') openNoteEditor(hit);
+    else if (hit) window.__editorOnTokenOpen?.({ ...hit });
     return;
   }
+  if (activeTool === 'note') return;
   if (activeTool !== 'marker') return;
   const { cx, cy } = getPos(e);
   const hit = markerAtPoint(cx, cy);
@@ -1308,6 +1574,7 @@ function applyErase(tx, ty) {
 
 function onWheel(e) {
   e.preventDefault();
+  setNoteHover(null);
   const { cx, cy } = getPos(e);
   const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
   const ns = Math.max(0.15, Math.min(8, view.scale * factor));
@@ -1317,18 +1584,22 @@ function onWheel(e) {
 }
 
 // ── Keyboard ───────────────────────────────────────────────────────────────────
+function isTypingTarget(t) {
+  return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+}
+
 function onKeyDown(e) {
   if (e.key === ' ') {
-    if (e.target.tagName !== 'INPUT') {
+    if (!isTypingTarget(e.target)) {
       e.preventDefault();
       if (!spaceDown) { spaceDown = true; spacePanLast = null; window.addEventListener('mousemove', onSpacePanMove); scheduleRender(); }
     }
     return;
   }
-  if (e.target.tagName === 'INPUT') return;
+  if (isTypingTarget(e.target)) return;
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); return; }
-  const toolKeys = { b: 'paint', e: 'erase', f: 'fill', r: 'rect', p: 'pick', d: 'door', s: 'secret', w: 'wall', m: 'marker', t: 'token' };
+  const toolKeys = { b: 'paint', e: 'erase', f: 'fill', r: 'rect', p: 'pick', d: 'door', s: 'secret', w: 'wall', m: 'marker', t: 'token', n: 'note' };
   const t = toolKeys[e.key.toLowerCase()];
   if (t) selectTool(t);
 }
@@ -1346,14 +1617,14 @@ function selectTile(k) {
   document.querySelectorAll('.palette-tile').forEach(el => el.classList.toggle('selected', el.dataset.tile === k));
   const def = TILES[k];
   const sw = document.getElementById('selected-tile-swatch');
-  sw.style.background = def?.color ?? '#555'; sw.textContent = def?.sym ?? '';
+  sw.style.background = swatchBackground(k); sw.textContent = def?.sym ?? '';
   document.getElementById('selected-tile-name').textContent = def?.label ?? k;
 }
 
 function selectTool(tool) {
   activeTool = tool;
   if (tool !== 'marker') { selectedMarkerId = null; markerDragState = null; }
-  if (tool !== 'token')  tokenDragState = null;
+  if (tool !== 'token' && tool !== 'note') tokenDragState = null;
   document.querySelectorAll('.tool-btn').forEach(el => el.classList.toggle('active', el.dataset.tool === tool));
   window.__editorOnToolChanged?.(tool);
   scheduleRender();
@@ -1389,7 +1660,9 @@ function recordToLevel(rec) {
   }
   for (const tk of (rec.tokens || [])) {
     if (tk && tk.id && TOKEN_TYPES[tk.type] && Number.isFinite(tk.x) && Number.isFinite(tk.y)) {
-      lv.tokens.push({ id: tk.id, x: tk.x, y: tk.y, type: tk.type, refId: tk.refId ?? null, name: tk.name ?? '' });
+      const t = { id: tk.id, x: tk.x, y: tk.y, type: tk.type, refId: tk.refId ?? null, name: tk.name ?? '' };
+      if (typeof tk.text === 'string') t.text = tk.text;
+      lv.tokens.push(t);
     }
   }
   return lv;
@@ -1491,6 +1764,26 @@ function fitView() {
 }
 
 // ── Palette ────────────────────────────────────────────────────────────────────
+// Textured swatch images for patterned floors, rendered once with the same
+// drawTilePattern() the canvas uses so the palette matches the map.
+const swatchCache = new Map();
+function swatchBackground(k) {
+  const def = TILES[k];
+  if (!def) return '#555';
+  if (!def.pattern && !def.difficult) return def.color;
+  if (!swatchCache.has(k)) {
+    const size = 36;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const cx = c.getContext('2d');
+    cx.fillStyle = def.color;
+    cx.fillRect(0, 0, size, size);
+    drawTilePattern(cx, def, k, 0, 0, size, 3, 5, null);
+    swatchCache.set(k, `${def.color} url(${c.toDataURL()}) center / cover`);
+  }
+  return swatchCache.get(k);
+}
+
 function buildPalette() {
   const container = document.getElementById('palette');
   for (const cat of TILE_CATS) {
@@ -1500,9 +1793,10 @@ function buildPalette() {
     for (const [k, def] of Object.entries(TILES)) {
       if (def.cat !== cat) continue;
       const btn = document.createElement('button');
-      btn.className = 'palette-tile'; btn.dataset.tile = k; btn.title = def.label;
+      btn.className = 'palette-tile'; btn.dataset.tile = k;
+      btn.title = def.difficult ? `${def.label} (difficult terrain)` : def.label;
       btn.onclick = () => selectTile(k);
-      const sw = document.createElement('span'); sw.className = 'palette-swatch'; sw.style.background = def.color;
+      const sw = document.createElement('span'); sw.className = 'palette-swatch'; sw.style.background = swatchBackground(k);
       if (def.sym) sw.textContent = def.sym;
       const lb = document.createElement('span'); lb.className = 'palette-label'; lb.textContent = def.label;
       btn.appendChild(sw); btn.appendChild(lb); container.appendChild(btn);
@@ -1549,7 +1843,7 @@ async function init() {
   canvas.addEventListener('mousedown',   onMouseDown);
   canvas.addEventListener('mousemove',   onMouseMove);
   canvas.addEventListener('dblclick',    onDoubleClick);
-  canvas.addEventListener('mouseleave',  () => { mouse.onCanvas = false; doorHover = null; wallHover = null; scheduleRender(); });
+  canvas.addEventListener('mouseleave',  () => { mouse.onCanvas = false; doorHover = null; wallHover = null; setNoteHover(null); scheduleRender(); });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   canvas.addEventListener('dragover',    onTokenDragOver);
   canvas.addEventListener('dragleave',   onTokenDragLeave);
@@ -1609,6 +1903,11 @@ window.editorSetMarkerSubTool  = (opts) => {
 };
 
 window.editorRemoveToken = removeToken;
+window.editorSaveNote    = saveNote;
+window.editorEditNote    = (id) => {
+  const tok = tokens.find(t => t.id === id && t.type === 'note');
+  if (tok) openNoteEditor(tok);
+};
 // Centre the view on a placed token (from the "On this layer" list).
 window.editorFocusToken = (id) => {
   const tok = tokens.find(t => t.id === id);

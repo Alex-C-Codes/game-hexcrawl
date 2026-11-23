@@ -685,3 +685,45 @@
   padding: 0 8px;
 }
 #editor-root .content-create button:disabled { opacity: 0.35; cursor: default; }
+
+/* ---- Map notes ---- */
+#editor-root .cb-note { color: #d8c47a; border-radius: 1px 5px 1px 1px; }
+#editor-root .content-edit { color: #6a6040; font-size: 0.75rem; }
+#editor-root .content-edit:hover { color: #d8c47a; }
+
+#editor-root .note-card,
+#editor-root .note-editor {
+  position: fixed;
+  z-index: 50;
+  background: #17140e;
+  border: 1px solid #5a4a28;
+  border-radius: 5px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+  font-family: Georgia, serif;
+  box-sizing: border-box;
+}
+#editor-root .note-card { pointer-events: none; padding: 8px 10px; max-height: 220px; overflow: hidden; }
+#editor-root .note-card-title { color: #d8c47a; font-size: 0.78rem; font-weight: bold; margin-bottom: 3px; }
+#editor-root .note-card-text { color: #c8bca0; font-size: 0.74rem; line-height: 1.45; white-space: pre-wrap; }
+#editor-root .note-card-text em { color: #5a5040; }
+
+#editor-root .note-backdrop { position: fixed; inset: 0; z-index: 49; }
+#editor-root .note-editor { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+#editor-root .note-editor-head { color: #d8c47a; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+#editor-root .note-editor-coord { color: #4a4538; letter-spacing: 0; text-transform: none; }
+#editor-root .note-editor input,
+#editor-root .note-editor textarea {
+  background: #0f0d0a; border: 1px solid #2e2818; border-radius: 3px; color: #e0d8c8;
+  font-family: Georgia, serif; font-size: 0.8rem; padding: 6px 8px; outline: none; resize: vertical;
+}
+#editor-root .note-editor input:focus,
+#editor-root .note-editor textarea:focus { border-color: #8a7038; }
+#editor-root .note-editor-actions { display: flex; align-items: center; gap: 6px; }
+#editor-root .note-editor-hint { flex: 1; color: #3a3528; font-size: 0.6rem; }
+#editor-root .note-btn {
+  background: none; border: 1px solid #3a3020; border-radius: 3px; color: #a09070;
+  font-family: Georgia, serif; font-size: 0.72rem; padding: 4px 10px; cursor: pointer;
+}
+#editor-root .note-btn.primary { background: #1e1a0c; border-color: #c9a84c; color: #c9a84c; }
+#editor-root .note-btn.danger { border-color: #4a2020; color: #a05040; }
+#editor-root .note-btn:disabled { opacity: 0.4; cursor: default; }

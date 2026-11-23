@@ -11,7 +11,7 @@ const CONTENT_TYPES = [
   { type: 'item',     label: 'Items',     single: 'item',     canCreate: true },
   { type: 'article',  label: 'Articles',  single: 'article',  canCreate: false },
 ];
-const CONTENT_OPEN_PATHS = { article: '/create/article' };
+const CONTENT_OPEN_PATHS = { article: '/create/article', creature: '/create/creature', item: '/create/item' };
 
 export default function EditorPage() {
   const [searchParams] = useSearchParams();
@@ -36,6 +36,8 @@ export default function EditorPage() {
   const [collapsed, setCollapsed]        = useState({});
   const [newNames, setNewNames]          = useState({});
   const [placed, setPlaced]              = useState([]);
+  const [noteEdit, setNoteEdit]          = useState(null); // { id|null, x, y, name, text, screenX, screenY }
+  const [noteHover, setNoteHover]        = useState(null);
 
   const sectionRef = useRef(null);
 
@@ -71,6 +73,8 @@ export default function EditorPage() {
   useEffect(() => {
     window.__editorContentId = contentId;
     window.__editorOnTokensChanged = (list) => setPlaced(list);
+    window.__editorOnNoteEdit  = (note) => { setNoteHover(null); setNoteEdit(note); };
+    window.__editorOnNoteHover = (note) => setNoteHover(note);
     window.__editorOnTokenOpen = (tok) => {
       const path = CONTENT_OPEN_PATHS[tok.type];
       // New tab so unsaved dungeon edits aren't lost
@@ -95,6 +99,8 @@ export default function EditorPage() {
       window.__editorOnToolChanged   = null;
       window.__editorOnTokensChanged = null;
       window.__editorOnTokenOpen     = null;
+      window.__editorOnNoteEdit      = null;
+      window.__editorOnNoteHover     = null;
       const s = document.querySelector('script[src="/editor.js"]');
       if (s) document.body.removeChild(s);
     };
@@ -213,6 +219,7 @@ export default function EditorPage() {
         <button className="tool-btn" data-tool="secret">Secret <span className="key">S</span></button>
         <button className="tool-btn" data-tool="marker">Marker <span className="key">M</span></button>
         <button className="tool-btn" data-tool="token">Token <span className="key">T</span></button>
+        <button className="tool-btn" data-tool="note">Note <span className="key">N</span></button>
         <div className="tbsep" />
         <button id="btn-undo"    className="icon-btn">↩ Undo</button>
         <button id="btn-redo"    className="icon-btn">↪ Redo</button>
@@ -273,7 +280,13 @@ export default function EditorPage() {
       {/* Token tool hint */}
       {activeTool === 'token' && (
         <div id="token-subtoolbar">
-          <span className="mst-hint">Drag from the Content panel onto a square (any tool) · Drag a token to move · Right-click to remove · Double-click an article to open it</span>
+          <span className="mst-hint">Drag from the Content panel onto a square (any tool) · Drag a token to move · Right-click to remove · Double-click to open in a new tab</span>
+        </div>
+      )}
+
+      {activeTool === 'note' && (
+        <div id="token-subtoolbar">
+          <span className="mst-hint">Click a square to add a note · Click a note to edit · Drag to move · Right-click to remove · Hover any note to read it</span>
         </div>
       )}
 
@@ -379,9 +392,16 @@ export default function EditorPage() {
                 <div className="content-label">On this layer ({placed.length})</div>
                 {placed.map(t => (
                   <div key={t.id} className="content-row placed" onClick={() => window.editorFocusToken?.(t.id)} title="Click to centre view">
-                    <span className={`content-badge cb-${t.type}`}>{(t.name || '?')[0].toUpperCase()}</span>
-                    <span className="content-name">{t.name || t.type}</span>
+                    <span className={`content-badge cb-${t.type}`}>{t.type === 'note' ? '≡' : (t.name || '?')[0].toUpperCase()}</span>
+                    <span className="content-name">{t.name || (t.type === 'note' ? (t.text || 'Note').split('\n')[0] : t.type)}</span>
                     <span className="content-coord">{t.x},{t.y}</span>
+                    {t.type === 'note' && (
+                      <button
+                        className="content-remove content-edit"
+                        title="Edit note"
+                        onClick={e => { e.stopPropagation(); window.editorEditNote?.(t.id); }}
+                      >✎</button>
+                    )}
                     <button
                       className="content-remove"
                       title="Remove from map"
@@ -449,6 +469,23 @@ export default function EditorPage() {
 
       </div>
 
+      {/* Note hover preview */}
+      {noteHover && !noteEdit && (
+        <div className="note-card" style={popoverPos(noteHover, 260, 160)}>
+          {noteHover.name && <div className="note-card-title">{noteHover.name}</div>}
+          <div className="note-card-text">{noteHover.text || <em>Empty note</em>}</div>
+        </div>
+      )}
+
+      {/* Note editor */}
+      {noteEdit && (
+        <NoteEditor
+          key={noteEdit.id || `${noteEdit.x},${noteEdit.y}`}
+          note={noteEdit}
+          onClose={() => setNoteEdit(null)}
+        />
+      )}
+
       {/* Status bar */}
       <div id="statusbar">
         <span id="status-pos" />
@@ -459,5 +496,65 @@ export default function EditorPage() {
       </div>
 
     </div>
+  );
+}
+
+// Place a fixed popover just right of its anchor square, kept inside the viewport.
+function popoverPos({ screenX, screenY }, w, h) {
+  const left = Math.max(8, Math.min(screenX + 8, window.innerWidth - w - 8));
+  const top  = Math.max(8, Math.min(screenY, window.innerHeight - h - 8));
+  return { left, top, width: w };
+}
+
+function NoteEditor({ note, onClose }) {
+  const [title, setTitle] = useState(note.name || '');
+  const [text,  setText]  = useState(note.text || '');
+  const isNew = !note.id;
+  const empty = !title.trim() && !text.trim();
+
+  function save() {
+    if (empty) { onClose(); return; }
+    window.editorSaveNote?.({ id: note.id, x: note.x, y: note.y, name: title, text });
+    onClose();
+  }
+  function remove() {
+    window.editorRemoveToken?.(note.id);
+    onClose();
+  }
+  function onKeyDown(e) {
+    if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save(); }
+  }
+
+  return (
+    <>
+      <div className="note-backdrop" onMouseDown={save} />
+      <div className="note-editor" style={popoverPos(note, 300, 280)} onKeyDown={onKeyDown}>
+        <div className="note-editor-head">
+          {isNew ? 'New note' : 'Edit note'} <span className="note-editor-coord">({note.x}, {note.y})</span>
+        </div>
+        <input
+          type="text"
+          placeholder="Title (optional)"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          maxLength={80}
+          autoFocus={isNew || !note.text}
+        />
+        <textarea
+          placeholder="What's here? Traps, read-aloud text, DM reminders…"
+          value={text}
+          onChange={e => setText(e.target.value)}
+          rows={7}
+          autoFocus={!isNew && !!note.text}
+        />
+        <div className="note-editor-actions">
+          {!isNew && <button className="note-btn danger" onClick={remove}>Delete</button>}
+          <span className="note-editor-hint">Ctrl+Enter save · Esc cancel</span>
+          <button className="note-btn" onClick={onClose}>Cancel</button>
+          <button className="note-btn primary" onClick={save} disabled={isNew && empty}>Save</button>
+        </div>
+      </div>
+    </>
   );
 }
