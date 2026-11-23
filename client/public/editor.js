@@ -28,8 +28,18 @@ const STONE_COLOR = '#1e1c19';
 
 // ── Level system ───────────────────────────────────────────────────────────────
 function createLevel(name) {
-  return { id: crypto.randomUUID(), name, height: 10, grid: new Map(), doors: new Set(), secretDoors: new Set(), walls: new Set(), markers: [], undo: [], redo: [] };
+  return { id: crypto.randomUUID(), name, height: 10, grid: new Map(), doors: new Set(), secretDoors: new Set(), walls: new Set(), markers: [], tokens: [], undo: [], redo: [] };
 }
+
+// ── Content tokens — library articles / items / creatures dropped onto squares ──
+// Each token: { id, x, y, type, refId, name } in tile coords. `refId` is the
+// library item's id; `name` is a snapshot so the map still reads if it's deleted.
+const TOKEN_TYPES = {
+  article:  { label: 'Article',  color: '#c9a84c', shape: 'square'  },
+  item:     { label: 'Item',     color: '#4a9ad0', shape: 'diamond' },
+  creature: { label: 'Creature', color: '#c05050', shape: 'circle'  },
+};
+const TOKEN_DRAG_MIME = 'application/battlemap-token';
 
 let levels = [createLevel('Layer 1')];
 let currentLevelIdx = 0;
@@ -51,6 +61,9 @@ let markers     = levels[0].markers;
 const markerTool = { type: 'number', color: '#c9a84c' };
 let selectedMarkerId = null;
 let markerDragState  = null; // { mode:'move'|'resize', startCx, startCy, origX?, origY?, mPx?, mPy?, origSize?, origDist?, undoSaved }
+let tokens           = levels[0].tokens;
+let tokenDragState   = null; // { id, undoSaved }
+let dropHoverTile    = null; // tile under an in-progress drag from the content panel
 let doorHover = null;
 let wallHover = null;
 let wallPainting = false;
@@ -93,6 +106,23 @@ function commitLevel() {
   levels[currentLevelIdx].secretDoors = secretDoors;
   levels[currentLevelIdx].walls       = walls;
   levels[currentLevelIdx].markers     = markers;
+  levels[currentLevelIdx].tokens      = tokens;
+}
+
+// Tell React the active layer's token list changed (for the "On this layer" list).
+function notifyTokensChanged() {
+  window.__editorOnTokensChanged?.(tokens.map(t => ({ ...t })));
+}
+
+// Shared by every place that swaps the active level in (switch/add/delete/load/new).
+function loadLevelRefs(lv) {
+  grid = lv.grid; doors = lv.doors; secretDoors = lv.secretDoors; walls = lv.walls;
+  markers = lv.markers ?? [];
+  tokens  = lv.tokens  ?? (lv.tokens = []);
+  undoStack = lv.undo; redoStack = lv.redo;
+  doorHover = null; wallHover = null;
+  selectedMarkerId = null; markerDragState = null; tokenDragState = null;
+  notifyTokensChanged();
 }
 
 function notifyLevelsChanged() {
@@ -107,12 +137,7 @@ function switchLevel(idx) {
   if (idx < 0 || idx >= levels.length || idx === currentLevelIdx) return;
   commitLevel();
   currentLevelIdx = idx;
-  const lv = levels[idx];
-  grid = lv.grid; doors = lv.doors; secretDoors = lv.secretDoors; walls = lv.walls;
-  markers = lv.markers ?? [];
-  undoStack = lv.undo; redoStack = lv.redo;
-  doorHover = null; wallHover = null;
-  selectedMarkerId = null; markerDragState = null;
+  loadLevelRefs(levels[idx]);
   notifyLevelsChanged();
   fitView(); scheduleRender();
 }
@@ -123,11 +148,7 @@ function addLevel() {
   const insertAt = currentLevelIdx + 1;
   levels.splice(insertAt, 0, lv);
   currentLevelIdx = insertAt;
-  grid = lv.grid; doors = lv.doors; secretDoors = lv.secretDoors; walls = lv.walls;
-  markers = lv.markers ?? [];
-  undoStack = lv.undo; redoStack = lv.redo;
-  doorHover = null; wallHover = null;
-  selectedMarkerId = null; markerDragState = null;
+  loadLevelRefs(lv);
   view.ox = canvas?.width / 2 ?? 400; view.oy = canvas?.height / 2 ?? 300;
   notifyLevelsChanged(); scheduleRender();
 }
@@ -150,12 +171,7 @@ function deleteLevel(idx) {
   levels.splice(idx, 1);
   const newIdx = Math.min(currentLevelIdx, levels.length - 1);
   currentLevelIdx = newIdx;
-  const lv = levels[newIdx];
-  grid = lv.grid; doors = lv.doors; secretDoors = lv.secretDoors; walls = lv.walls;
-  markers = lv.markers ?? [];
-  undoStack = lv.undo; redoStack = lv.redo;
-  doorHover = null; wallHover = null;
-  selectedMarkerId = null; markerDragState = null;
+  loadLevelRefs(levels[newIdx]);
   notifyLevelsChanged(); fitView(); scheduleRender();
 }
 
@@ -346,7 +362,7 @@ function renderSection() {
 }
 
 // ── Undo / redo ────────────────────────────────────────────────────────────────
-function snapshot() { return { g: new Map(grid), d: new Set(doors), sd: new Set(secretDoors), w: new Set(walls), mk: markers.map(m => ({...m})) }; }
+function snapshot() { return { g: new Map(grid), d: new Set(doors), sd: new Set(secretDoors), w: new Set(walls), mk: markers.map(m => ({...m})), tk: tokens.map(t => ({...t})) }; }
 
 function saveUndo() {
   undoStack.push(snapshot());
@@ -361,7 +377,10 @@ function undo() {
   const snap = undoStack.pop();
   grid = snap.g; doors = snap.d; secretDoors = snap.sd ?? new Set(); walls = snap.w;
   markers = snap.mk ?? [];
+  tokens  = snap.tk ?? [];
+  tokenDragState = null;
   commitLevel(); // resync level record after reference replacement
+  notifyTokensChanged();
   syncUndoButtons(); scheduleRender();
 }
 
@@ -371,7 +390,10 @@ function redo() {
   const snap = redoStack.pop();
   grid = snap.g; doors = snap.d; secretDoors = snap.sd ?? new Set(); walls = snap.w;
   markers = snap.mk ?? [];
+  tokens  = snap.tk ?? [];
+  tokenDragState = null;
   commitLevel();
+  notifyTokensChanged();
   syncUndoButtons(); scheduleRender();
 }
 
@@ -653,6 +675,146 @@ function renderMarkers(s) {
   }
 }
 
+// ── Tokens ─────────────────────────────────────────────────────────────────────
+function tokensByTile() {
+  const m = new Map();
+  for (const t of tokens) {
+    const k = key(t.x, t.y);
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(t);
+  }
+  return m;
+}
+
+// Screen-space slots for the tokens on one tile, in draw order. One token sits
+// centred; 2+ share a 2×2 grid, and past 4 the last slot becomes a "+N" chip.
+// Shared by rendering and hit-testing so the clickable area always matches.
+function tokenSlots(tx, ty, list, s) {
+  const { x: sx, y: sy } = toScreen(tx, ty);
+  if (list.length === 1) {
+    return [{ x: sx + s / 2, y: sy + s / 2, r: Math.max(5, s * 0.32), token: list[0] }];
+  }
+  const r = Math.max(4, s * 0.19);
+  const cells = [[0.28, 0.28], [0.72, 0.28], [0.28, 0.72], [0.72, 0.72]];
+  const out = [];
+  for (let i = 0; i < Math.min(list.length, 4); i++) {
+    const overflow = i === 3 && list.length > 4 ? list.length - 3 : 0;
+    out.push({ x: sx + cells[i][0] * s, y: sy + cells[i][1] * s, r, token: list[i], overflow });
+  }
+  return out;
+}
+
+function tokenAtPoint(cx, cy) {
+  const s = tileS();
+  const { x: tx, y: ty } = toTile(cx, cy);
+  const list = tokens.filter(t => t.x === tx && t.y === ty);
+  if (!list.length) return null;
+  const slots = tokenSlots(tx, ty, list, s);
+  for (let i = slots.length - 1; i >= 0; i--) {
+    const { x, y, r, token } = slots[i];
+    if ((cx - x) ** 2 + (cy - y) ** 2 <= (r + 2) ** 2) return token;
+  }
+  return null;
+}
+
+function traceTokenShape(shape, x, y, r) {
+  ctx.beginPath();
+  if (shape === 'diamond') {
+    ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath();
+  } else if (shape === 'square') {
+    const h = r * 0.86;
+    ctx.rect(x - h, y - h, h * 2, h * 2);
+  } else {
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+  }
+}
+
+function renderTokens(s) {
+  for (const [k, list] of tokensByTile()) {
+    const [tx, ty] = k.split(',').map(Number);
+    const { x: sx, y: sy } = toScreen(tx, ty);
+    if (sx + s < 0 || sx > canvas.width || sy + s < 0 || sy > canvas.height) continue;
+    for (const { x, y, r, token, overflow } of tokenSlots(tx, ty, list, s)) {
+      const def = TOKEN_TYPES[token.type] || TOKEN_TYPES.article;
+      const dragging = tokenDragState?.id === token.id;
+      traceTokenShape(overflow ? 'circle' : def.shape, x, y, r);
+      ctx.fillStyle = 'rgba(14,12,9,0.94)'; ctx.fill();
+      ctx.strokeStyle = dragging ? '#ffd700' : (overflow ? '#8a8070' : def.color);
+      ctx.lineWidth = Math.max(1.2, r * 0.2); ctx.stroke();
+      const label = overflow ? `+${overflow}` : ((token.name || def.label).trim()[0] || '?').toUpperCase();
+      ctx.fillStyle = dragging ? '#ffd700' : (overflow ? '#c8b898' : def.color);
+      ctx.font = `bold ${Math.max(6, Math.round(r * (overflow ? 0.8 : 1.05)))}px Georgia, serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, x, y + r * 0.06);
+    }
+  }
+
+  // Highlight the square a content-panel drag would land on
+  if (dropHoverTile) {
+    const { x: sx, y: sy } = toScreen(dropHoverTile.x, dropHoverTile.y);
+    ctx.fillStyle = 'rgba(255,215,0,0.14)';
+    ctx.fillRect(sx, sy, s, s);
+    ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
+    ctx.strokeRect(sx + 1, sy + 1, s - 2, s - 2);
+  }
+}
+
+function hasDuplicateToken(tok, x, y, ignoreId) {
+  return tokens.some(t => t.id !== ignoreId && t.x === x && t.y === y && t.type === tok.type && t.refId === tok.refId);
+}
+
+function removeToken(id) {
+  if (!tokens.some(t => t.id === id)) return;
+  saveUndo();
+  tokens = tokens.filter(t => t.id !== id);
+  commitLevel();
+  notifyTokensChanged(); scheduleRender();
+}
+
+// ── Content-panel drag & drop onto the canvas ──────────────────────────────────
+function dragTileFromEvent(e) {
+  const { cx, cy } = getPos(e);
+  return toTile(cx, cy);
+}
+
+function onTokenDragOver(e) {
+  if (!Array.from(e.dataTransfer.types).includes(TOKEN_DRAG_MIME)) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+  const t = dragTileFromEvent(e);
+  if (!dropHoverTile || dropHoverTile.x !== t.x || dropHoverTile.y !== t.y) {
+    dropHoverTile = t; scheduleRender();
+  }
+}
+
+function onTokenDragLeave() {
+  // Canvas fires spurious leave/enter pairs mid-drag; just clear the highlight
+  // and let the next dragover restore it. The drop reads its own position.
+  dropHoverTile = null; scheduleRender();
+}
+
+function onTokenDrop(e) {
+  const raw = e.dataTransfer.getData(TOKEN_DRAG_MIME);
+  if (!raw) return;
+  e.preventDefault();
+  // Firefox can report (0,0) on drop — fall back to the last dragover tile then.
+  const target = (e.clientX || e.clientY) ? dragTileFromEvent(e) : dropHoverTile;
+  dropHoverTile = null;
+  if (!target) { scheduleRender(); return; }
+  try {
+    const { type, id, name } = JSON.parse(raw);
+    if (!TOKEN_TYPES[type]) return;
+    const tok = { id: crypto.randomUUID(), x: target.x, y: target.y, type, refId: id ?? null, name: name || '' };
+    if (!hasDuplicateToken(tok, tok.x, tok.y)) {
+      saveUndo();
+      tokens.push(tok);
+      notifyTokensChanged();
+    }
+  } catch { /* malformed payload — ignore */ }
+  canvas.focus();
+  scheduleRender();
+}
+
 // ── Render ─────────────────────────────────────────────────────────────────────
 function scheduleRender() {
   if (!rafPending) { rafPending = true; requestAnimationFrame(() => { rafPending = false; render(); }); }
@@ -717,6 +879,7 @@ function render() {
   renderDoors(s);
   renderSecretDoors(s);
   renderMarkers(s);
+  renderTokens(s);
 
   // Rect preview
   if (activeTool === 'rect' && mouse.down && mouse.btn === 0 && mouse.rectX0 !== -1) {
@@ -814,7 +977,7 @@ function render() {
     ctx.fillText(dimLabel, lcx, lcy);
   }
 
-  if (mouse.onCanvas && activeTool !== 'door' && activeTool !== 'secret' && activeTool !== 'wall' && activeTool !== 'marker' && !(activeTool === 'rect' && !rectOptions.snapGrid)) {
+  if (mouse.onCanvas && activeTool !== 'door' && activeTool !== 'secret' && activeTool !== 'wall' && activeTool !== 'marker' && !(activeTool === 'token' && !tokenDragState) && !(activeTool === 'rect' && !rectOptions.snapGrid)) {
     const { x: sx, y: sy } = toScreen(mouse.tx, mouse.ty);
     ctx.strokeStyle = 'rgba(255,215,0,0.75)';
     ctx.lineWidth = Math.max(1, s * 0.06);
@@ -841,7 +1004,9 @@ function render() {
 function updateStatus() {
   const t = mouse.onCanvas ? getTile(mouse.tx, mouse.ty) : null;
   document.getElementById('status-pos').textContent  = mouse.onCanvas ? `(${mouse.tx}, ${mouse.ty})` : '';
-  document.getElementById('status-tile').textContent = t ? `Tile: ${TILES[t]?.label ?? t}` : '';
+  const here = mouse.onCanvas ? tokens.filter(tk => tk.x === mouse.tx && tk.y === mouse.ty) : [];
+  const hereLabel = here.length ? ` · ${here.map(tk => tk.name || TOKEN_TYPES[tk.type]?.label).join(', ')}` : '';
+  document.getElementById('status-tile').textContent = t ? `Tile: ${TILES[t]?.label ?? t}${hereLabel}` : '';
   const snapIndicator = activeTool === 'rect' ? (rectOptions.snapGrid ? ' [snap]' : ' [free]') : '';
   document.getElementById('status-tool').textContent =
     spaceDown ? 'Tool: pan (space)' : `Tool: ${activeTool}${snapIndicator}`;
@@ -871,6 +1036,14 @@ function onMouseDown(e) {
       if (selectedMarkerId === hit.id) { selectedMarkerId = null; markerDragState = null; }
     }
     scheduleRender(); return;
+  }
+
+  // Token tool: left-drag a token to move it, right-click to remove it.
+  // Right-click on empty space still falls through to panning.
+  if (activeTool === 'token' && !spaceDown && (e.button === 0 || e.button === 2)) {
+    const hit = tokenAtPoint(cx, cy);
+    if (hit && e.button === 2) { removeToken(hit.id); return; }
+    if (hit && e.button === 0) { tokenDragState = { id: hit.id, undoSaved: false }; scheduleRender(); return; }
   }
 
   // Wall/door/secret tools intercept L+R before the pan block
@@ -1021,6 +1194,14 @@ function onMouseMove(e) {
     }
   }
 
+  if (tokenDragState && mouse.down && mouse.btn === 0 && moved) {
+    const tok = tokens.find(t => t.id === tokenDragState.id);
+    if (tok) {
+      if (!tokenDragState.undoSaved) { saveUndo(); tokenDragState.undoSaved = true; }
+      tok.x = tx; tok.y = ty;
+    }
+  }
+
   if (mouse.down && mouse.btn === 0 && moved && !spaceDown && activeTool !== 'pan' && activeTool !== 'door' && activeTool !== 'secret' && activeTool !== 'wall' && activeTool !== 'marker') {
     if (activeTool === 'paint') applyPaint(tx, ty);
     if (activeTool === 'erase') applyErase(tx, ty);
@@ -1042,6 +1223,14 @@ function onMouseUp(e) {
   }
   if (e.button === 0 && activeTool === 'marker' && markerDragState) {
     markerDragState = null;
+  }
+  if (e.button === 0 && tokenDragState) {
+    const tok = tokens.find(t => t.id === tokenDragState.id);
+    // Moving onto a square that already holds the same content merges them
+    if (tok && hasDuplicateToken(tok, tok.x, tok.y, tok.id)) tokens = tokens.filter(t => t.id !== tok.id);
+    commitLevel();
+    tokenDragState = null;
+    notifyTokensChanged(); scheduleRender();
   }
   if (e.button === 0 && activeTool === 'rect' && mouse.rectX0 !== -1) {
     let x1, y1, x2, y2;
@@ -1086,6 +1275,12 @@ function onMouseUp(e) {
 }
 
 function onDoubleClick(e) {
+  if (activeTool === 'token') {
+    const { cx, cy } = getPos(e);
+    const hit = tokenAtPoint(cx, cy);
+    if (hit) window.__editorOnTokenOpen?.({ ...hit });
+    return;
+  }
   if (activeTool !== 'marker') return;
   const { cx, cy } = getPos(e);
   const hit = markerAtPoint(cx, cy);
@@ -1133,7 +1328,7 @@ function onKeyDown(e) {
   if (e.target.tagName === 'INPUT') return;
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); return; }
-  const toolKeys = { b: 'paint', e: 'erase', f: 'fill', r: 'rect', p: 'pick', d: 'door', s: 'secret', w: 'wall', m: 'marker' };
+  const toolKeys = { b: 'paint', e: 'erase', f: 'fill', r: 'rect', p: 'pick', d: 'door', s: 'secret', w: 'wall', m: 'marker', t: 'token' };
   const t = toolKeys[e.key.toLowerCase()];
   if (t) selectTool(t);
 }
@@ -1158,6 +1353,7 @@ function selectTile(k) {
 function selectTool(tool) {
   activeTool = tool;
   if (tool !== 'marker') { selectedMarkerId = null; markerDragState = null; }
+  if (tool !== 'token')  tokenDragState = null;
   document.querySelectorAll('.tool-btn').forEach(el => el.classList.toggle('active', el.dataset.tool === tool));
   window.__editorOnToolChanged?.(tool);
   scheduleRender();
@@ -1174,6 +1370,7 @@ function levelToRecord(lv) {
     secretDoors: Array.from(lv.secretDoors),
     walls:       Array.from(lv.walls),
     markers:     (lv.markers || []).map(m => ({...m})),
+    tokens:      (lv.tokens  || []).map(t => ({...t})),
   };
 }
 
@@ -1189,6 +1386,11 @@ function recordToLevel(rec) {
   for (const wk of (rec.walls       || [])) lv.walls.add(wk);
   for (const mk of (rec.markers     || [])) {
     if (mk && mk.id && mk.type && mk.value !== undefined) lv.markers.push({...mk});
+  }
+  for (const tk of (rec.tokens || [])) {
+    if (tk && tk.id && TOKEN_TYPES[tk.type] && Number.isFinite(tk.x) && Number.isFinite(tk.y)) {
+      lv.tokens.push({ id: tk.id, x: tk.x, y: tk.y, type: tk.type, refId: tk.refId ?? null, name: tk.name ?? '' });
+    }
   }
   return lv;
 }
@@ -1214,12 +1416,7 @@ function legacyToLevel(d) {
 function applyLoadedLevels(loadedLevels, activeIdx) {
   levels = loadedLevels;
   currentLevelIdx = Math.min(activeIdx ?? 0, levels.length - 1);
-  const lv = levels[currentLevelIdx];
-  grid = lv.grid; doors = lv.doors; secretDoors = lv.secretDoors; walls = lv.walls;
-  markers = lv.markers ?? [];
-  undoStack = lv.undo; redoStack = lv.redo;
-  doorHover = null; wallHover = null;
-  selectedMarkerId = null; markerDragState = null;
+  loadLevelRefs(levels[currentLevelIdx]);
   notifyLevelsChanged();
 }
 
@@ -1354,6 +1551,9 @@ async function init() {
   canvas.addEventListener('dblclick',    onDoubleClick);
   canvas.addEventListener('mouseleave',  () => { mouse.onCanvas = false; doorHover = null; wallHover = null; scheduleRender(); });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
+  canvas.addEventListener('dragover',    onTokenDragOver);
+  canvas.addEventListener('dragleave',   onTokenDragLeave);
+  canvas.addEventListener('drop',        onTokenDrop);
   canvas.addEventListener('wheel',       onWheel, { passive: false });
   window.addEventListener('mouseup',     onMouseUp);
   window.addEventListener('mousemove',   onPanMove);
@@ -1374,10 +1574,7 @@ async function init() {
     if (!grid.size || confirm('Clear all levels and start fresh?')) {
       levels = [createLevel('Level 1')];
       currentLevelIdx = 0;
-      grid = levels[0].grid; doors = levels[0].doors; secretDoors = levels[0].secretDoors; walls = levels[0].walls;
-      markers = levels[0].markers;
-      undoStack = levels[0].undo; redoStack = levels[0].redo;
-      selectedMarkerId = null; markerDragState = null;
+      loadLevelRefs(levels[0]);
       view.ox = canvas.width / 2; view.oy = canvas.height / 2; view.scale = 1;
       notifyLevelsChanged(); scheduleRender();
     }
@@ -1409,6 +1606,17 @@ window.editorSetRectOptions    = (opts) => {
 window.editorSetMarkerSubTool  = (opts) => {
   if (opts?.type)  markerTool.type  = opts.type;
   if (opts?.color) markerTool.color = opts.color;
+};
+
+window.editorRemoveToken = removeToken;
+// Centre the view on a placed token (from the "On this layer" list).
+window.editorFocusToken = (id) => {
+  const tok = tokens.find(t => t.id === id);
+  if (!tok || !canvas) return;
+  const s = tileS();
+  view.ox = canvas.width  / 2 - (tok.x + 0.5) * s;
+  view.oy = canvas.height / 2 - (tok.y + 0.5) * s;
+  scheduleRender();
 };
 
 window.cleanupEditor = function () {

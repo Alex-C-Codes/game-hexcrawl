@@ -1,6 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { getByType, upsert } from '../lib/storage';
 import './battlemap.css';
+
+// Library content that can be dropped onto dungeon squares. Must match
+// TOKEN_TYPES / TOKEN_DRAG_MIME in public/editor.js.
+const TOKEN_DRAG_MIME = 'application/battlemap-token';
+const CONTENT_TYPES = [
+  { type: 'creature', label: 'Creatures', single: 'creature', canCreate: true },
+  { type: 'item',     label: 'Items',     single: 'item',     canCreate: true },
+  { type: 'article',  label: 'Articles',  single: 'article',  canCreate: false },
+];
+const CONTENT_OPEN_PATHS = { article: '/create/article' };
 
 export default function EditorPage() {
   const [searchParams] = useSearchParams();
@@ -19,10 +30,52 @@ export default function EditorPage() {
   const [roughOn, setRoughOn]            = useState(false);
   const [snapOn, setSnapOn]              = useState(true);
 
+  const [content, setContent]            = useState({ creature: [], item: [], article: [] });
+  const [contentError, setContentError]  = useState(null);
+  const [contentFilter, setContentFilter] = useState('');
+  const [collapsed, setCollapsed]        = useState({});
+  const [newNames, setNewNames]          = useState({});
+  const [placed, setPlaced]              = useState([]);
+
   const sectionRef = useRef(null);
+
+  const refreshContent = useCallback(async () => {
+    try {
+      const lists = await Promise.all(CONTENT_TYPES.map(c => getByType(c.type)));
+      setContent(Object.fromEntries(CONTENT_TYPES.map((c, i) => [c.type, lists[i]])));
+      setContentError(null);
+    } catch (err) {
+      setContentError(err.message || 'Failed to load library');
+    }
+  }, []);
+
+  useEffect(() => { refreshContent(); }, [refreshContent]);
+
+  async function handleCreate(type) {
+    const name = (newNames[type] || '').trim();
+    if (!name) return;
+    try {
+      await upsert({ id: crypto.randomUUID(), type, name, data: { description: '' } });
+      setNewNames(n => ({ ...n, [type]: '' }));
+      await refreshContent();
+    } catch (err) {
+      alert('Could not create: ' + err.message);
+    }
+  }
+
+  function contentDragStart(e, type, item) {
+    e.dataTransfer.setData(TOKEN_DRAG_MIME, JSON.stringify({ type, id: item.id, name: item.name }));
+    e.dataTransfer.effectAllowed = 'copy';
+  }
 
   useEffect(() => {
     window.__editorContentId = contentId;
+    window.__editorOnTokensChanged = (list) => setPlaced(list);
+    window.__editorOnTokenOpen = (tok) => {
+      const path = CONTENT_OPEN_PATHS[tok.type];
+      // New tab so unsaved dungeon edits aren't lost
+      if (path && tok.refId) window.open(`${path}?id=${tok.refId}`, '_blank');
+    };
 
     window.__editorOnLevelsChanged = (lvs, idx) => {
       setLevels(lvs.map(l => ({ id: l.id, name: l.name, height: l.height ?? 10 })));
@@ -40,6 +93,8 @@ export default function EditorPage() {
       window.__editorContentId = null;
       window.__editorOnLevelsChanged = null;
       window.__editorOnToolChanged   = null;
+      window.__editorOnTokensChanged = null;
+      window.__editorOnTokenOpen     = null;
       const s = document.querySelector('script[src="/editor.js"]');
       if (s) document.body.removeChild(s);
     };
@@ -157,6 +212,7 @@ export default function EditorPage() {
         <button className="tool-btn" data-tool="door">Door <span className="key">D</span></button>
         <button className="tool-btn" data-tool="secret">Secret <span className="key">S</span></button>
         <button className="tool-btn" data-tool="marker">Marker <span className="key">M</span></button>
+        <button className="tool-btn" data-tool="token">Token <span className="key">T</span></button>
         <div className="tbsep" />
         <button id="btn-undo"    className="icon-btn">↩ Undo</button>
         <button id="btn-redo"    className="icon-btn">↪ Redo</button>
@@ -211,6 +267,13 @@ export default function EditorPage() {
           ))}
           <div className="tbsep" />
           <span className="mst-hint">Click to place · Drag to move · Right-click to delete · Double-click to edit</span>
+        </div>
+      )}
+
+      {/* Token tool hint */}
+      {activeTool === 'token' && (
+        <div id="token-subtoolbar">
+          <span className="mst-hint">Drag from the Content panel onto a square (any tool) · Drag a token to move · Right-click to remove · Double-click an article to open it</span>
         </div>
       )}
 
@@ -291,6 +354,97 @@ export default function EditorPage() {
               <canvas id="section-canvas" ref={sectionRef} />
             </div>
           )}
+        </div>
+
+        {/* Content panel — drag library content onto squares */}
+        <div id="content-panel">
+          <div className="layers-header content-header">
+            Content
+            <button className="content-refresh" onClick={refreshContent} title="Reload from library">↻</button>
+          </div>
+          <input
+            className="content-filter"
+            type="text"
+            placeholder="Filter…"
+            value={contentFilter}
+            onChange={e => setContentFilter(e.target.value)}
+            spellCheck={false}
+          />
+
+          <div className="content-scroll">
+            {contentError && <div className="content-empty content-error">{contentError}</div>}
+
+            {placed.length > 0 && (
+              <div className="content-section">
+                <div className="content-label">On this layer ({placed.length})</div>
+                {placed.map(t => (
+                  <div key={t.id} className="content-row placed" onClick={() => window.editorFocusToken?.(t.id)} title="Click to centre view">
+                    <span className={`content-badge cb-${t.type}`}>{(t.name || '?')[0].toUpperCase()}</span>
+                    <span className="content-name">{t.name || t.type}</span>
+                    <span className="content-coord">{t.x},{t.y}</span>
+                    <button
+                      className="content-remove"
+                      title="Remove from map"
+                      onClick={e => { e.stopPropagation(); window.editorRemoveToken?.(t.id); }}
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {CONTENT_TYPES.map(({ type, label, single, canCreate }) => {
+              const q = contentFilter.trim().toLowerCase();
+              const list = (content[type] || []).filter(it => !q || (it.name || '').toLowerCase().includes(q));
+              const isCollapsed = collapsed[type];
+              return (
+                <div key={type} className="content-section">
+                  <button
+                    className="content-label content-toggle"
+                    onClick={() => setCollapsed(c => ({ ...c, [type]: !c[type] }))}
+                  >
+                    {isCollapsed ? '▸' : '▾'} {label} <span className="content-count">{list.length}</span>
+                  </button>
+                  {!isCollapsed && (
+                    <>
+                      {list.length === 0 && (
+                        <div className="content-empty">
+                          {q ? 'No matches.' : canCreate ? `No ${label.toLowerCase()} yet.` : `No ${label.toLowerCase()} yet. Create one in the Article Editor.`}
+                        </div>
+                      )}
+                      {list.map(it => (
+                        <div
+                          key={it.id}
+                          className="content-row"
+                          draggable
+                          onDragStart={e => contentDragStart(e, type, it)}
+                          title={`Drag onto a square — ${it.name}`}
+                        >
+                          <span className={`content-badge cb-${type}`}>{(it.name || '?')[0].toUpperCase()}</span>
+                          <span className="content-name">{it.name || 'Untitled'}</span>
+                        </div>
+                      ))}
+                      {canCreate && (
+                        <form
+                          className="content-create"
+                          onSubmit={e => { e.preventDefault(); handleCreate(type); }}
+                        >
+                          <input
+                            type="text"
+                            placeholder={`New ${single}…`}
+                            value={newNames[type] || ''}
+                            onChange={e => setNewNames(n => ({ ...n, [type]: e.target.value }))}
+                            maxLength={60}
+                            spellCheck={false}
+                          />
+                          <button type="submit" disabled={!(newNames[type] || '').trim()}>+</button>
+                        </form>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
       </div>

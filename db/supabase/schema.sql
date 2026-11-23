@@ -6,7 +6,7 @@
 create table if not exists public.library_items (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  type       text not null check (type in ('hexmap','battlemap','voxel3d','article','settlement','faction')),
+  type       text not null check (type in ('hexmap','battlemap','voxel3d','article','settlement','faction','item','creature')),
   name       text not null default 'Untitled',
   data       jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
@@ -48,3 +48,12 @@ for each row execute function public.set_updated_at();
 alter table public.library_items drop constraint if exists library_items_type_check;
 alter table public.library_items add constraint library_items_type_check
   check (type in ('hexmap','battlemap','voxel3d','article','settlement','faction'));
+
+-- =============================================================
+--  Migration: add 'item' and 'creature' as library item types
+--  (placed as tokens on squares in the dungeon battlemap editor).
+--  Run separately against a database that already has library_items.
+-- =============================================================
+alter table public.library_items drop constraint if exists library_items_type_check;
+alter table public.library_items add constraint library_items_type_check
+  check (type in ('hexmap','battlemap','voxel3d','article','settlement','faction','item','creature'));

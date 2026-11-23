@@ -4,12 +4,12 @@ import { getAll, remove, upsert } from '../lib/storage';
 
 const LEGACY_KEY = 'hx_content';
 
-const TYPE_LABELS = { battlemap: 'Battlemap', article: 'Article', hexmap: 'Hex Map', faction: 'Faction' };
-const TYPE_ICONS  = { battlemap: '⚔️', article: '📜', hexmap: '🗺️', faction: '🛡️' };
+const TYPE_LABELS = { battlemap: 'Battlemap', article: 'Article', hexmap: 'Hex Map', faction: 'Faction', item: 'Item', creature: 'Creature' };
+const TYPE_ICONS  = { battlemap: '⚔️', article: '📜', hexmap: '🗺️', faction: '🛡️', item: '💎', creature: '🐉' };
 const EDIT_PATHS  = { battlemap: '/create/battlemap', article: '/create/article', hexmap: '/create/hexmap', faction: '/create/faction' };
 
-const FILTERS = ['All', 'Battlemap', 'Article', 'Hex Map', 'Faction'];
-const TYPE_KEYS = { 'All': null, 'Battlemap': 'battlemap', 'Article': 'article', 'Hex Map': 'hexmap', 'Faction': 'faction' };
+const FILTERS = ['All', 'Battlemap', 'Article', 'Hex Map', 'Faction', 'Item', 'Creature'];
+const TYPE_KEYS = { 'All': null, 'Battlemap': 'battlemap', 'Article': 'article', 'Hex Map': 'hexmap', 'Faction': 'faction', 'Item': 'item', 'Creature': 'creature' };
 
 function formatDate(iso) {
   if (!iso) return '';
@@ -161,17 +161,19 @@ export default function LibraryPage() {
               </div>
 
               {/* Actions */}
-              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                <button
-                  onClick={() => navigate(`${EDIT_PATHS[item.type] ?? '/create'}?id=${item.id}`)}
-                  style={{
-                    flex: 1, background: '#181510', border: '1px solid #3a3020', borderRadius: 4,
-                    color: '#c9a84c', fontFamily: 'Georgia, serif', fontSize: '0.74rem',
-                    padding: '5px 0', cursor: 'pointer',
-                  }}
-                >
-                  Edit
-                </button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 6, justifyContent: 'flex-end' }}>
+                {EDIT_PATHS[item.type] && (
+                  <button
+                    onClick={() => navigate(`${EDIT_PATHS[item.type]}?id=${item.id}`)}
+                    style={{
+                      flex: 1, background: '#181510', border: '1px solid #3a3020', borderRadius: 4,
+                      color: '#c9a84c', fontFamily: 'Georgia, serif', fontSize: '0.74rem',
+                      padding: '5px 0', cursor: 'pointer',
+                    }}
+                  >
+                    Edit
+                  </button>
+                )}
                 <button
                   onClick={() => handleDelete(item.id, item.name)}
                   style={{
