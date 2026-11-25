@@ -4,12 +4,12 @@ import { getAll, remove, upsert } from '../lib/storage';
 
 const LEGACY_KEY = 'hx_content';
 
-const TYPE_LABELS = { battlemap: 'Battlemap', article: 'Article', hexmap: 'Hex Map', faction: 'Faction', item: 'Item', creature: 'Creature' };
-const TYPE_ICONS  = { battlemap: '⚔️', article: '📜', hexmap: '🗺️', faction: '🛡️', item: '💎', creature: '🐉' };
-const EDIT_PATHS  = { battlemap: '/create/battlemap', article: '/create/article', hexmap: '/create/hexmap', faction: '/create/faction', item: '/create/item', creature: '/create/creature' };
+const TYPE_LABELS = { battlemap: 'Battlemap', article: 'Article', hexmap: 'Hex Map', faction: 'Faction', item: 'Item', creature: 'Creature', spell: 'Spell' };
+const TYPE_ICONS  = { battlemap: '⚔️', article: '📜', hexmap: '🗺️', faction: '🛡️', item: '💎', creature: '🐉', spell: '✨' };
+const EDIT_PATHS  = { battlemap: '/create/battlemap', article: '/create/article', hexmap: '/create/hexmap', faction: '/create/faction', item: '/create/item', creature: '/create/creature', spell: '/create/spell' };
 
-const FILTERS = ['All', 'Battlemap', 'Article', 'Hex Map', 'Faction', 'Item', 'Creature'];
-const TYPE_KEYS = { 'All': null, 'Battlemap': 'battlemap', 'Article': 'article', 'Hex Map': 'hexmap', 'Faction': 'faction', 'Item': 'item', 'Creature': 'creature' };
+const FILTERS = ['All', 'Battlemap', 'Article', 'Hex Map', 'Faction', 'Item', 'Creature', 'Spell'];
+const TYPE_KEYS = { 'All': null, 'Battlemap': 'battlemap', 'Article': 'article', 'Hex Map': 'hexmap', 'Faction': 'faction', 'Item': 'item', 'Creature': 'creature', 'Spell': 'spell' };
 
 function formatDate(iso) {
   if (!iso) return '';

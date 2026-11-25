@@ -47,6 +47,7 @@ export default function App() {
               <Route path="/create/faction"            element={<FactionPage />} />
               <Route path="/create/creature"           element={<EntryEditorPage key="creature" kind="creature" />} />
               <Route path="/create/item"               element={<EntryEditorPage key="item" kind="item" />} />
+              <Route path="/create/spell"              element={<EntryEditorPage key="spell" kind="spell" />} />
               <Route path="/library"                   element={<LibraryPage />} />
             </Route>
           </Route>

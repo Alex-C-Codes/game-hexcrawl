@@ -1,3 +1,5 @@
+import { calculateCR } from './crCalc';
+
 // Game-system templates for creature & item entries.
 //
 // An entry's data is system-agnostic:
@@ -8,7 +10,9 @@
 // the new template doesn't use are just hidden — so a template can be added
 // later without migrating anything.
 //
-// Field kinds: text | number | select | checkbox | abilities | textarea
+// Field kinds: text | number | select | checkbox | multi | abilities | textarea
+// Optional template `body(stats)` returns [{ title?, text } | { quickRef }]
+// paragraphs drawn under the stat lines (used by spells).
 // `span` is out of a 6-column grid (default 2).
 
 // ── 5.5e (2024) reference tables ─────────────────────────────────────────────
@@ -27,6 +31,27 @@ const ITEM_CATEGORIES = [
   'Adventuring Gear', 'Tool', 'Ammunition', 'Mount or Vehicle', 'Trade Good',
 ];
 const RARITIES = ['', 'Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary', 'Artifact'];
+
+const SPELL_LEVELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+const SPELL_SCHOOLS = [
+  'Abjuration', 'Conjuration', 'Divination', 'Enchantment',
+  'Evocation', 'Illusion', 'Necromancy', 'Transmutation',
+];
+const SPELL_CLASSES = ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Warlock', 'Wizard'];
+const SPELL_DELIVERY = [
+  '', 'Melee Spell Attack', 'Ranged Spell Attack',
+  'STR Save', 'DEX Save', 'CON Save', 'INT Save', 'WIS Save', 'CHA Save', 'Automatic',
+];
+const DAMAGE_TYPES = [
+  '', 'Acid', 'Bludgeoning', 'Cold', 'Fire', 'Force', 'Lightning', 'Necrotic',
+  'Piercing', 'Poison', 'Psychic', 'Radiant', 'Slashing', 'Thunder', 'Healing',
+];
+
+// Short mechanics summary shown under a spell's stat block, e.g. "DEX Save · 8d6 Fire · 20-ft Sphere"
+function spellQuickRef(s) {
+  const dmg = [s.damage, s.damageType].filter(v => !blank(v)).join(' ');
+  return [s.delivery, dmg, s.area].filter(v => !blank(v)).join(' · ');
+}
 
 // [CR, XP]
 const CR_TABLE = [
@@ -97,6 +122,25 @@ const GENERIC = {
     subtitle: s => [s.category, s.rarity].filter(v => !blank(v)).join(', '),
     lines: s => ({ top: [['Value', s.value], ['Weight', s.weight]], bottom: [] }),
   },
+  spell: {
+    fields: [
+      { key: 'level',       label: 'Level / Tier',        kind: 'text', placeholder: '3, Novice, Tier II…', span: 2 },
+      { key: 'school',      label: 'School / Tradition',  kind: 'text', placeholder: 'Pyromancy, Divine…', span: 2 },
+      { key: 'cost',        label: 'Cost',                kind: 'text', placeholder: '3 mana, 1 Fate…', span: 2 },
+      { key: 'castingTime', label: 'Casting Time', kind: 'text', span: 2 },
+      { key: 'range',       label: 'Range',        kind: 'text', span: 2 },
+      { key: 'duration',    label: 'Duration',     kind: 'text', span: 2 },
+      { key: 'effect',      label: 'Effect',       kind: 'textarea', rows: 6, span: 6 },
+      { key: 'scaling',     label: 'Scaling',      kind: 'textarea', rows: 2, span: 6, placeholder: 'How it gets stronger, if it does' },
+    ],
+    sections: [],
+    subtitle: s => [s.school, s.level].filter(v => !blank(v)).join(', '),
+    lines: s => ({
+      top: [['Cost', s.cost], ['Casting Time', s.castingTime], ['Range', s.range], ['Duration', s.duration]],
+      bottom: [],
+    }),
+    body: s => [{ text: s.effect }, { title: 'Scaling', text: s.scaling }],
+  },
 };
 
 const DND_55 = {
@@ -118,7 +162,12 @@ const DND_55 = {
       { key: 'immunities',      label: 'Immunities',      kind: 'text', placeholder: 'Poison; Poisoned', span: 2 },
       { key: 'gear',            label: 'Gear',            kind: 'text', span: 2 },
       { key: 'languages',       label: 'Languages',       kind: 'text', placeholder: 'Common, Draconic', span: 2 },
-      { key: 'cr',              label: 'CR',              kind: 'select', options: ['', ...CR_TABLE.map(r => r[0])], span: 2 },
+      // '' = Auto (calculated); anything else is the author's own CR
+      { key: 'cr',              label: 'CR',              kind: 'select', options: ['', ...CR_TABLE.map(r => r[0])], span: 2, autoCR: true },
+      // Offense inputs for the CR calculation — blank = read from Actions
+      { key: 'dpr',         label: 'Damage / Round', kind: 'number', span: 2, auto: 'dpr',         hint: 'avg over first 3 rounds' },
+      { key: 'attackBonus', label: 'Attack Bonus',   kind: 'number', span: 2, auto: 'attackBonus' },
+      { key: 'saveDC',      label: 'Save DC',        kind: 'number', span: 2, auto: 'saveDC' },
     ],
     sections: [
       { key: 'traits',          label: 'Traits' },
@@ -128,8 +177,10 @@ const DND_55 = {
       { key: 'legendaryActions', label: 'Legendary Actions' },
     ],
     // Derived numbers shown in the editor and preview
-    derive(s) {
-      const cr  = crInfo(s.cr || '');
+    derive(s, sections) {
+      const calc = calculateCR(s, sections);
+      const effectiveCR = s.cr || calc.cr || '';
+      const cr  = crInfo(effectiveCR);
       const pb  = cr?.pb ?? 2;
       const ab  = s.abilities || {};
       const saves = s.saves || {};
@@ -138,14 +189,14 @@ const DND_55 = {
       const init = blank(s.initiative) ? mods.dex : parseInt(String(s.initiative).replace('−', '-'), 10);
       const perception = skillBonus(s.skills, 'Perception');
       const passive = 10 + (perception ?? mods.wis);
-      return { cr, pb, mods, saveVals, init: Number.isFinite(init) ? init : mods.dex, passive };
+      return { cr, pb, mods, saveVals, init: Number.isFinite(init) ? init : mods.dex, passive, calc, effectiveCR, crIsAuto: !s.cr };
     },
     subtitle: s => {
       const kind = [s.size, s.creatureType].filter(v => !blank(v)).join(' ');
       return [kind, s.alignment].filter(v => !blank(v)).join(', ');
     },
-    lines(s) {
-      const d = this.derive(s);
+    lines(s, sections) {
+      const d = this.derive(s, sections);
       const senses = /passive perception/i.test(s.senses || '')
         ? s.senses
         : [s.senses, `Passive Perception ${d.passive}`].filter(v => !blank(v)).join('; ');
@@ -164,7 +215,7 @@ const DND_55 = {
           ['Gear', s.gear],
           ['Senses', senses],
           ['Languages', s.languages],
-          ['CR', d.cr ? `${s.cr} (XP ${d.cr.xp.toLocaleString()}; PB ${fmtMod(d.pb)})` : ''],
+          ['CR', d.cr ? `${d.effectiveCR} (XP ${d.cr.xp.toLocaleString()}; PB ${fmtMod(d.pb)})` : ''],
         ],
       };
     },
@@ -191,6 +242,53 @@ const DND_55 = {
       return [cat, rar].filter(v => !blank(v)).join(', ');
     },
     lines: s => ({ top: [['Charges', s.charges], ['Value', s.value], ['Weight', s.weight]], bottom: [] }),
+  },
+  spell: {
+    fields: [
+      { key: 'level',       label: 'Level',  kind: 'select', options: SPELL_LEVELS, optionLabels: { '0': 'Cantrip' }, span: 2 },
+      { key: 'school',      label: 'School', kind: 'select', options: SPELL_SCHOOLS, span: 2 },
+      { key: 'ritual',      label: 'Ritual', kind: 'checkbox', span: 1 },
+      { key: 'concentration', label: 'Concentration', kind: 'checkbox', span: 1 },
+      { key: 'classes',     label: 'Spell Lists', kind: 'multi', options: SPELL_CLASSES, span: 6 },
+      { key: 'castingTime', label: 'Casting Time', kind: 'text', placeholder: 'Action, Bonus Action, 1 minute…', span: 2 },
+      { key: 'range',       label: 'Range',        kind: 'text', placeholder: '150 feet, Self, Touch', span: 2 },
+      { key: 'duration',    label: 'Duration',     kind: 'text', placeholder: 'Instantaneous, 1 minute', span: 2 },
+      { key: 'compV',       label: 'Verbal (V)',   kind: 'checkbox', span: 1 },
+      { key: 'compS',       label: 'Somatic (S)',  kind: 'checkbox', span: 1 },
+      { key: 'compM',       label: 'Material (M)', kind: 'checkbox', span: 1 },
+      { key: 'material',    label: 'Material', kind: 'text', placeholder: 'a tiny ball of bat guano and sulfur', span: 3, showIf: s => !!s.compM },
+      { key: 'effect',      label: 'Effect', kind: 'textarea', rows: 7, span: 6,
+        placeholder: 'What the spell does. Saving throws, damage, conditions, area…' },
+      { key: 'higherLevels', label: 'Using a Higher-Level Spell Slot / Cantrip Upgrade', kind: 'textarea', rows: 2, span: 6 },
+      // Quick-reference mechanics (searchable later; also shown under the preview)
+      { key: 'delivery',    label: 'Attack / Save', kind: 'select', options: SPELL_DELIVERY, span: 2 },
+      { key: 'damage',      label: 'Damage / Healing', kind: 'text', placeholder: '8d6', span: 1 },
+      { key: 'damageType',  label: 'Type',  kind: 'select', options: DAMAGE_TYPES, span: 1 },
+      { key: 'area',        label: 'Area',  kind: 'text', placeholder: '20-foot-radius Sphere', span: 2 },
+    ],
+    sections: [],
+    // 2024 style: "Level 3 Evocation (Sorcerer, Wizard)" / "Evocation Cantrip (Wizard)"
+    subtitle(s) {
+      const school = s.school || 'Spell';
+      const head = s.level === '0' ? `${school} Cantrip` : `Level ${s.level || '1'} ${school}`;
+      const lists = (s.classes || []).length ? ` (${s.classes.join(', ')})` : '';
+      return head + lists;
+    },
+    lines(s) {
+      const comps = [s.compV && 'V', s.compS && 'S', s.compM && (blank(s.material) ? 'M' : `M (${s.material})`)].filter(Boolean).join(', ');
+      const cast = blank(s.castingTime) ? '' : s.castingTime + (s.ritual ? ' or Ritual' : '');
+      const dur = blank(s.duration) ? '' :
+        s.concentration && !/concentration/i.test(s.duration) ? `Concentration, up to ${s.duration}` : s.duration;
+      return {
+        top: [['Casting Time', cast], ['Range', s.range], ['Components', comps], ['Duration', dur]],
+        bottom: [],
+      };
+    },
+    body: s => [
+      { text: s.effect },
+      { title: s.level === '0' ? 'Cantrip Upgrade' : 'Using a Higher-Level Spell Slot', text: s.higherLevels },
+      { quickRef: spellQuickRef(s) },
+    ],
   },
 };
 

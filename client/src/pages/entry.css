@@ -75,7 +75,7 @@
 }
 #entry-root .en-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 #entry-root .en-row input, #entry-root .en-row textarea { margin-top: 0; }
-#entry-root .en-custom input:first-child { flex: 0 0 34%; }
+#entry-root .en-custom > input:first-of-type { flex: 0 0 34%; }
 #entry-root .en-remove { background: none; border: none; color: #5a3030; font-size: 0.95rem; cursor: pointer; padding: 4px 2px; }
 #entry-root .en-remove:hover { color: #c05050; }
 
@@ -106,3 +106,61 @@
 }
 #entry-root .pv-section p { margin: 0 0 5px; }
 #entry-root .pv-section b { color: #e0d0b0; }
+
+/* ── CR calculation breakdown ── */
+#entry-root .en-crcalc { background: #0d0d18; border: 1px solid #2a2a3a; border-radius: 6px; }
+#entry-root .en-crcalc-head {
+  width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+  color: #c9a84c; font-family: Georgia, serif; font-size: 0.8rem; padding: 8px 10px;
+}
+#entry-root .en-crcalc-head em { color: #5a5444; font-style: normal; font-size: 0.72rem; }
+#entry-root .en-crcalc-body { padding: 0 12px 10px; font-size: 0.74rem; color: #a09880; line-height: 1.55; }
+#entry-root .en-crcalc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 600px) { #entry-root .en-crcalc-cols { grid-template-columns: 1fr; } }
+#entry-root .en-crcalc-title { color: #d4a44c; margin-bottom: 2px; }
+#entry-root .en-crcalc-final { margin-top: 8px; color: #e0d8c8; }
+#entry-root .en-crcalc-final b { color: #e8c870; }
+#entry-root .en-crcalc-notes { margin: 6px 0 0; padding-left: 18px; color: #7a7260; }
+#entry-root .en-crcalc-foot { margin-top: 8px; color: #4a4538; font-size: 0.66rem; }
+
+/* ── Reorderable rows ── */
+#entry-root .en-row { position: relative; }
+#entry-root .en-row-tools { display: flex; flex-direction: column; align-items: center; gap: 1px; flex-shrink: 0; }
+#entry-root .en-handle {
+  cursor: grab; color: #4a4538; font-size: 0.8rem; letter-spacing: -2px; padding: 2px 3px; user-select: none; line-height: 1;
+}
+#entry-root .en-handle:hover { color: #c9a84c; }
+#entry-root .en-handle:active { cursor: grabbing; }
+#entry-root .en-move {
+  background: none; border: none; color: #4a4538; cursor: pointer; font-size: 0.7rem; padding: 0 3px; line-height: 1.2;
+}
+#entry-root .en-move:hover:not(:disabled) { color: #c9a84c; }
+#entry-root .en-move:disabled { opacity: 0.25; cursor: default; }
+#entry-root .en-row.dragging { opacity: 0.4; }
+#entry-root .en-row.drop-before::before,
+#entry-root .en-row.drop-after::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 2px; background: #c9a84c; border-radius: 1px;
+}
+#entry-root .en-row.drop-before::before { top: -5px; }
+#entry-root .en-row.drop-after::after { bottom: -5px; }
+#entry-root .en-drop-hint { display: none; color: #4a4538; font-size: 0.7rem; padding: 10px; text-align: center; border: 1px dashed #2a2a3a; border-radius: 6px; }
+#entry-root .en-section.drop-into .en-drop-hint { display: block; border-color: #c9a84c; color: #c9a84c; }
+
+/* ── Spells ── */
+#entry-root .pv-spell { border-top-color: #6a4a9a; border-bottom-color: #6a4a9a; }
+#entry-root .pv-spell .pv-rule { background: linear-gradient(90deg, #6a4a9a, transparent); }
+#entry-root .pv-body p { margin: 0 0 6px; }
+#entry-root .pv-body b { color: #e0d0b0; }
+#entry-root .pv-quickref {
+  margin-top: 8px; padding-top: 6px; border-top: 1px solid #2e2820;
+  color: #8a7a5a; font-size: 0.7rem; letter-spacing: 0.03em;
+}
+
+/* Multi-select chips (spell lists) */
+#entry-root .en-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+#entry-root .en-chip {
+  background: #181510; border: 1px solid #3a3020; border-radius: 12px;
+  color: #6a6050; font-family: Georgia, serif; font-size: 0.72rem; padding: 3px 11px; cursor: pointer;
+}
+#entry-root .en-chip:hover { color: #c9a84c; }
+#entry-root .en-chip.on { background: #2a1f0e; border-color: #c9a84c; color: #e8c870; }

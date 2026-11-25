@@ -59,6 +59,13 @@ const TYPES = [
     href: '/create/item',
     desc: 'Create magic items, loot, and gear with rarity, attunement, and properties. Place them in your dungeons.',
   },
+  {
+    key: 'spell',
+    title: 'Spell',
+    icon: '✨',
+    href: '/create/spell',
+    desc: 'Write custom spells with level, school, components, and scaling — any system, with 5.5e built in.',
+  },
 ];
 
 const cardStyle = {
