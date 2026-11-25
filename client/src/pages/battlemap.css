@@ -727,3 +727,49 @@
 #editor-root .note-btn.primary { background: #1e1a0c; border-color: #c9a84c; color: #c9a84c; }
 #editor-root .note-btn.danger { border-color: #4a2020; color: #a05040; }
 #editor-root .note-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- Text boxes ---- */
+#editor-root .tb-editor {
+  position: absolute;
+  z-index: 5;
+  margin: 0;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  outline: 1px dashed #ffd700;
+  outline-offset: 2px;
+  resize: none;
+  overflow: hidden;
+  font-family: Georgia, serif;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  caret-color: #ffd700;
+}
+#editor-root .tb-chip {
+  display: flex; align-items: center; gap: 6px;
+  margin: 6px 6px 0; padding: 6px 8px;
+  border: 1px dashed #3a3020; border-radius: 4px;
+  color: #a09070; font-size: 0.72rem; cursor: grab; user-select: none;
+}
+#editor-root .tb-chip:hover { border-color: #c9a84c; color: #c9a84c; background: #161410; }
+#editor-root .tb-chip-icon {
+  width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid currentColor; border-radius: 2px; font-size: 0.6rem; font-weight: bold;
+}
+#editor-root .mst-bg {
+  background: #181510; border: 1px solid #2a2418; border-radius: 3px;
+  color: #6a6050; font-family: Georgia, serif; font-size: 0.68rem; padding: 2px 8px; cursor: pointer;
+}
+#editor-root .mst-bg.active { border-color: #c9a84c; color: #c9a84c; }
+#editor-root .mst-bg.bg-parchment { background: #d9c9a3; color: #3a2e18; }
+#editor-root .mst-bg.bg-parchment.active { box-shadow: 0 0 0 1px #c9a84c; }
+
+/* ---- Props ---- */
+#editor-root .prop-swatch { background: #2a2620; overflow: hidden; }
+#editor-root .prop-swatch canvas { width: 18px; height: 18px; display: block; }
+#editor-root .palette-prop { cursor: grab; }
+#editor-root .palette-prop.selected { background: #1e1a0c; border-color: #c9a84c; color: #c9a84c; }
+
+#editor-root .mst-btn:disabled { opacity: 0.35; cursor: default; }
+#editor-root .prop-sel-name { color: #c9a84c; font-size: 0.74rem; white-space: nowrap; }
+#editor-root .prop-delete:not(:disabled) { border-color: #4a2020; color: #c06050; }

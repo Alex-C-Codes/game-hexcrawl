@@ -17,6 +17,7 @@ const TILES = {
   marble:      { label: 'Marble',        color: '#a8a296', passable: true, cat: 'Floors', sym: null, pattern: 'marble' },
   checker:     { label: 'Checker Tile',  color: '#6a6258', passable: true, cat: 'Floors', sym: null, pattern: 'checker' },
   carpet:      { label: 'Carpet',        color: '#6a2228', passable: true, cat: 'Floors', sym: null, pattern: 'carpet' },
+  arcane:      { label: 'Arcane Floor',  color: '#1c2036', passable: true, cat: 'Floors', sym: null, pattern: 'arcane' },
   grate:       { label: 'Iron Grate',    color: '#3c3c3a', passable: true, cat: 'Floors', sym: null, pattern: 'grate' },
   dirt:        { label: 'Dirt',          color: '#5e4a32', passable: true, cat: 'Floors', sym: null, pattern: 'speckle' },
   sand:        { label: 'Sand',          color: '#a08a5c', passable: true, cat: 'Floors', sym: null, pattern: 'speckle' },
@@ -25,6 +26,22 @@ const TILES = {
   mud:         { label: 'Mud',           color: '#3e3022', passable: true, cat: 'Floors', sym: null, pattern: 'speckle', difficult: true },
   ice:         { label: 'Ice',           color: '#7a9cac', passable: true, cat: 'Floors', sym: null, pattern: 'cracks',  difficult: true },
   shallows:    { label: 'Shallow Water', color: '#2e5a6a', passable: true, cat: 'Floors', sym: null, pattern: 'ripples', difficult: true },
+  // Nature — outdoor ground cover and vegetation
+  canopy:      { label: 'Tree Canopy',   color: '#2e5a2a', passable: true,  cat: 'Nature', sym: null, pattern: 'canopy' },
+  pine:        { label: 'Pine Canopy',   color: '#1e4030', passable: true,  cat: 'Nature', sym: null, pattern: 'pine' },
+  trunk:       { label: 'Tree Trunk',    color: '#3e5232', passable: false, cat: 'Nature', sym: null, pattern: 'trunk' },
+  bush:        { label: 'Bush',          color: '#3e5232', passable: true,  cat: 'Nature', sym: null, pattern: 'bush', difficult: true },
+  boulder:     { label: 'Boulder',       color: '#5e5444', passable: false, cat: 'Nature', sym: null, pattern: 'boulder' },
+  tallgrass:   { label: 'Tall Grass',    color: '#4a6a32', passable: true,  cat: 'Nature', sym: null, pattern: 'tallgrass' },
+  flowers:     { label: 'Flowers',       color: '#3e5a30', passable: true,  cat: 'Nature', sym: null, pattern: 'flowers' },
+  crops:       { label: 'Crops',         color: '#6a5a30', passable: true,  cat: 'Nature', sym: null, pattern: 'crops' },
+  snow:        { label: 'Snow',          color: '#cfd6dc', passable: true,  cat: 'Nature', sym: null, pattern: 'snow', difficult: true },
+  // Roofs — overhead cover; tip: put them on their own layer and use Ghost to show/hide
+  roof_tile:   { label: 'Clay Tile Roof', color: '#9a4a2e', passable: false, cat: 'Roofs', sym: null, pattern: 'roofTile' },
+  thatch:      { label: 'Thatch Roof',    color: '#a8884a', passable: false, cat: 'Roofs', sym: null, pattern: 'thatch' },
+  shingle:     { label: 'Wood Shingles',  color: '#6a4a2e', passable: false, cat: 'Roofs', sym: null, pattern: 'shingle' },
+  slate:       { label: 'Slate Roof',     color: '#4a5058', passable: false, cat: 'Roofs', sym: null, pattern: 'slate' },
+  canvas:      { label: 'Tent Canvas',    color: '#b8a888', passable: false, cat: 'Roofs', sym: null, pattern: 'canvas' },
   door:        { label: 'Door',       color: '#8a5525', passable: true,  cat: 'legacy',    sym: 'D'  },
   bars:        { label: 'Iron Bars',  color: '#3a3838', passable: false, cat: 'Structure', sym: '|'  },
   pillar:      { label: 'Pillar',     color: '#2a2820', passable: false, cat: 'Structure', sym: '#'  },
@@ -38,12 +55,12 @@ const TILES = {
   spawn:       { label: 'Spawn',      color: '#4a1a4a', passable: true,  cat: 'Markers',   sym: 'X'  },
 };
 
-const TILE_CATS = ['Floors', 'Terrain', 'Structure', 'Feature', 'Markers'];
+const TILE_CATS = ['Floors', 'Nature', 'Roofs', 'Terrain', 'Structure', 'Feature', 'Markers'];
 const STONE_COLOR = '#1e1c19';
 
 // ── Level system ───────────────────────────────────────────────────────────────
 function createLevel(name) {
-  return { id: crypto.randomUUID(), name, height: 10, grid: new Map(), doors: new Set(), secretDoors: new Set(), walls: new Set(), markers: [], tokens: [], undo: [], redo: [] };
+  return { id: crypto.randomUUID(), name, height: 10, grid: new Map(), doors: new Set(), secretDoors: new Set(), walls: new Set(), markers: [], tokens: [], textboxes: [], props: [], undo: [], redo: [] };
 }
 
 // ── Content tokens — library articles / items / creatures dropped onto squares ──
@@ -81,6 +98,26 @@ let markerDragState  = null; // { mode:'move'|'resize', startCx, startCy, origX?
 let tokens           = levels[0].tokens;
 let tokenDragState   = null; // { id, undoSaved } — undoSaved doubles as "has moved"
 let hoverNoteId      = null;
+
+// Text boxes: { id, x, y, w, text, size, color, bg } — x/y/w in tile units
+// (fractional, free placement); height grows to fit the wrapped text.
+const TEXTBOX_SIZES = { s: 0.38, m: 0.55, l: 0.8, xl: 1.15 }; // font size as a fraction of a tile
+let textboxes         = levels[0].textboxes;
+let selectedTextboxId = null;
+let textboxDrag       = null; // { mode:'move'|'resize'|'create', startCx, startCy, origX, origY, origW, x0, y0, x1, y1, undoSaved }
+let editingTextboxId  = null;
+let editingIsNew      = false;
+let textEditorEl      = null;
+const textboxStyle    = { size: 'm', color: '#e8e0d0', bg: 'dark' }; // defaults for new boxes
+
+// Props: objects that sit on top of floor tiles without replacing them.
+// { id, kind, x, y, rot } — x/y is the top-left square of the (rotated)
+// footprint, rot is quarter turns clockwise (0–3).
+let props          = levels[0].props;
+let selectedProp   = 'coffin';   // palette choice for new props
+let propRot        = 0;          // rotation for new props
+let selectedPropId = null;
+let propDrag       = null;       // { id, startTx, startTy, origX, origY, undoSaved }
 let dropHoverTile    = null; // tile under an in-progress drag from the content panel
 let doorHover = null;
 let wallHover = null;
@@ -98,7 +135,8 @@ let undoStack = levels[0].undo;
 let redoStack = levels[0].redo;
 const paintedInStroke = new Set();
 const mouse = { tx: 0, ty: 0, rawX: 0, rawY: 0, down: false, btn: -1, onCanvas: false,
-                rectX0: -1, rectY0: -1, rectRawX0: 0, rectRawY0: 0,
+                // rectActive marks a drag in progress — rectX0/Y0 can be any tile, including -1
+                rectActive: false, rectX0: 0, rectY0: 0, rectRawX0: 0, rectRawY0: 0,
                 panX: 0, panY: 0, panOX: 0, panOY: 0 };
 let spaceDown = false;
 let spacePanLast = null;
@@ -125,6 +163,8 @@ function commitLevel() {
   levels[currentLevelIdx].walls       = walls;
   levels[currentLevelIdx].markers     = markers;
   levels[currentLevelIdx].tokens      = tokens;
+  levels[currentLevelIdx].textboxes   = textboxes;
+  levels[currentLevelIdx].props       = props;
 }
 
 // Tell React the active layer's token list changed (for the "On this layer" list).
@@ -134,6 +174,13 @@ function notifyTokensChanged() {
 
 // Shared by every place that swaps the active level in (switch/add/delete/load/new).
 function loadLevelRefs(lv) {
+  commitTextEdit(); // finishes on the outgoing level's array, in place
+  textboxes = lv.textboxes ?? (lv.textboxes = []);
+  props     = lv.props ?? (lv.props = []);
+  selectedTextboxId = null; textboxDrag = null;
+  selectedPropId = null; propDrag = null;
+  window.__editorOnPropSelect?.(null);
+  notifyTextboxSelect();
   grid = lv.grid; doors = lv.doors; secretDoors = lv.secretDoors; walls = lv.walls;
   markers = lv.markers ?? [];
   tokens  = lv.tokens  ?? (lv.tokens = []);
@@ -381,7 +428,7 @@ function renderSection() {
 }
 
 // ── Undo / redo ────────────────────────────────────────────────────────────────
-function snapshot() { return { g: new Map(grid), d: new Set(doors), sd: new Set(secretDoors), w: new Set(walls), mk: markers.map(m => ({...m})), tk: tokens.map(t => ({...t})) }; }
+function snapshot() { return { g: new Map(grid), d: new Set(doors), sd: new Set(secretDoors), w: new Set(walls), mk: markers.map(m => ({...m})), tk: tokens.map(t => ({...t})), tb: textboxes.map(t => ({...t})), pr: props.map(p => ({...p})) }; }
 
 function saveUndo() {
   undoStack.push(snapshot());
@@ -391,26 +438,42 @@ function saveUndo() {
 }
 
 function undo() {
+  commitTextEdit();
   if (!undoStack.length) return;
   redoStack.push(snapshot());
   const snap = undoStack.pop();
   grid = snap.g; doors = snap.d; secretDoors = snap.sd ?? new Set(); walls = snap.w;
   markers = snap.mk ?? [];
   tokens  = snap.tk ?? [];
-  tokenDragState = null;
+  textboxes = snap.tb ?? [];
+  props     = snap.pr ?? [];
+  propDrag  = null;
+  if (selectedPropId && !props.some(p => p.id === selectedPropId)) selectedPropId = null;
+  notifyPropSelect();
+  tokenDragState = null; textboxDrag = null;
+  if (selectedTextboxId && !textboxes.some(t => t.id === selectedTextboxId)) selectedTextboxId = null;
+  notifyTextboxSelect();
   commitLevel(); // resync level record after reference replacement
   notifyTokensChanged();
   syncUndoButtons(); scheduleRender();
 }
 
 function redo() {
+  commitTextEdit();
   if (!redoStack.length) return;
   undoStack.push(snapshot());
   const snap = redoStack.pop();
   grid = snap.g; doors = snap.d; secretDoors = snap.sd ?? new Set(); walls = snap.w;
   markers = snap.mk ?? [];
   tokens  = snap.tk ?? [];
-  tokenDragState = null;
+  textboxes = snap.tb ?? [];
+  props     = snap.pr ?? [];
+  propDrag  = null;
+  if (selectedPropId && !props.some(p => p.id === selectedPropId)) selectedPropId = null;
+  notifyPropSelect();
+  tokenDragState = null; textboxDrag = null;
+  if (selectedTextboxId && !textboxes.some(t => t.id === selectedTextboxId)) selectedTextboxId = null;
+  notifyTextboxSelect();
   commitLevel();
   notifyTokensChanged();
   syncUndoButtons(); scheduleRender();
@@ -507,8 +570,10 @@ function renderDoors(s) {
 
 function renderSecretDoorEdge(type, x, y, s, alpha) {
   ctx.globalAlpha = alpha ?? 1;
-  const barLen   = Math.max(6, s * 0.72);
-  const barThick = Math.max(2, s * 0.14);
+  // Drawn as a full stretch of ordinary wall (so players' eyes read "wall"),
+  // with the DM's red dot on top
+  const barLen   = s;
+  const barThick = wallWidth(s);
   const dotR     = Math.max(2, s * 0.09);
   ctx.lineCap = 'butt';
 
@@ -516,12 +581,12 @@ function renderSecretDoorEdge(type, x, y, s, alpha) {
   if (type === 'h') {
     midY = view.oy + y * s;
     midX = view.ox + x * s + s / 2;
-    ctx.strokeStyle = STONE_COLOR; ctx.lineWidth = barThick;
+    ctx.strokeStyle = wallColor(); ctx.lineWidth = barThick;
     ctx.beginPath(); ctx.moveTo(midX - barLen / 2, midY); ctx.lineTo(midX + barLen / 2, midY); ctx.stroke();
   } else {
     midX = view.ox + x * s;
     midY = view.oy + y * s + s / 2;
-    ctx.strokeStyle = STONE_COLOR; ctx.lineWidth = barThick;
+    ctx.strokeStyle = wallColor(); ctx.lineWidth = barThick;
     ctx.beginPath(); ctx.moveTo(midX, midY - barLen / 2); ctx.lineTo(midX, midY + barLen / 2); ctx.stroke();
   }
 
@@ -550,10 +615,84 @@ function renderSecretDoors(s) {
 }
 
 // ── Edge wall system ───────────────────────────────────────────────────────────
+// One wall look for everything: edges drawn with the Wall tool AND the outline
+// of every room (wherever a floor square meets empty space / Wall tiles) are
+// collected into one set and stroked together, so they're identical and their
+// corners join cleanly. Doors cut openings in either kind.
 function wKey(type, x, y) { return type + ':' + x + ',' + y; }
 
+const WALL_COLORS  = { ink: '#0d0b09', bone: '#c8b898' };
+const WALL_WEIGHTS = { s: 0.1, m: 0.16, l: 0.24 };
+const WALL_STYLE_DEFAULTS = { auto: true, hatch: true, color: 'ink', weight: 'm' };
+const wallStyle = { ...WALL_STYLE_DEFAULTS }; // saved with the map
+
+function wallColor() { return WALL_COLORS[wallStyle.color] || WALL_COLORS.ink; }
+function wallWidth(s) { return Math.max(2, s * (WALL_WEIGHTS[wallStyle.weight] || WALL_WEIGHTS.m)); }
+
+function setWallStyle(opts, { notify = true } = {}) {
+  if (typeof opts?.auto  === 'boolean') wallStyle.auto  = opts.auto;
+  if (typeof opts?.hatch === 'boolean') wallStyle.hatch = opts.hatch;
+  if (WALL_COLORS[opts?.color])   wallStyle.color  = opts.color;
+  if (WALL_WEIGHTS[opts?.weight]) wallStyle.weight = opts.weight;
+  if (notify) window.__editorOnWallStyle?.({ ...wallStyle });
+  scheduleRender();
+}
+
+// Every wall edge to draw on the active layer
+function collectWallEdges() {
+  const edges = new Set(walls);
+  if (wallStyle.auto) {
+    for (const k of grid.keys()) {
+      const [x, y] = k.split(',').map(Number);
+      if (!grid.has(key(x, y - 1))) edges.add(`h:${x},${y}`);
+      if (!grid.has(key(x, y + 1))) edges.add(`h:${x},${y + 1}`);
+      if (!grid.has(key(x - 1, y))) edges.add(`v:${x},${y}`);
+      if (!grid.has(key(x + 1, y))) edges.add(`v:${x + 1},${y}`);
+    }
+  }
+  for (const d of doors) edges.delete(d);
+  for (const d of secretDoors) edges.delete(d);
+  return edges;
+}
+
+// Sketchy cross-hatching in a one-square band around the outside of rooms
+// (the Dungeon Scrawl look). Each square gets a small cluster of parallel
+// strokes at its own angle.
+function renderHatching(s) {
+  if (!wallStyle.auto || !wallStyle.hatch || s < 6 || !grid.size) return;
+  const band = new Set();
+  for (const k of grid.keys()) {
+    const [x, y] = k.split(',').map(Number);
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const nk = key(x + dx, y + dy);
+      if (!grid.has(nk)) band.add(nk);
+    }
+  }
+  ctx.strokeStyle = wallStyle.color === 'bone' ? 'rgba(200,184,152,0.28)' : 'rgba(190,175,140,0.2)';
+  ctx.lineWidth = Math.max(0.6, s * 0.035);
+  ctx.lineCap = 'round';
+  for (const k of band) {
+    const [x, y] = k.split(',').map(Number);
+    const { x: sx, y: sy } = toScreen(x, y);
+    if (sx + s < 0 || sx > canvas.width || sy + s < 0 || sy > canvas.height) continue;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(sx, sy, s, s); ctx.clip();
+    const a = tileNoise(x, y, 913) * Math.PI;
+    const dx = Math.cos(a), dy = Math.sin(a), nx = -dy, ny = dx;
+    const cx = sx + s / 2, cy = sy + s / 2, gap = s / 4.5, len = s * 0.75;
+    ctx.beginPath();
+    for (let i = -2; i <= 2; i++) {
+      const ox = cx + nx * gap * i, oy = cy + ny * gap * i;
+      ctx.moveTo(ox - dx * len, oy - dy * len); ctx.lineTo(ox + dx * len, oy + dy * len);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.lineCap = 'butt';
+}
+
 function renderWallEdge(type, x, y, color, s) {
-  ctx.strokeStyle = color; ctx.lineWidth = Math.max(2.5, s * 0.16); ctx.lineCap = 'square';
+  ctx.strokeStyle = color; ctx.lineWidth = wallWidth(s); ctx.lineCap = 'square';
   ctx.beginPath();
   if (type === 'h') {
     const ly = view.oy + y * s;
@@ -566,11 +705,19 @@ function renderWallEdge(type, x, y, color, s) {
 }
 
 function renderWalls(s) {
-  for (const wk of walls) {
+  // One path, one stroke: square caps fill the corners where segments meet
+  ctx.strokeStyle = wallColor(); ctx.lineWidth = wallWidth(s); ctx.lineCap = 'square';
+  ctx.beginPath();
+  for (const wk of collectWallEdges()) {
     const [type, coords] = wk.split(':');
     const [x, y] = coords.split(',').map(Number);
-    renderWallEdge(type, x, y, '#c8b898', s);
+    const px = view.ox + x * s, py = view.oy + y * s;
+    if (px < -s * 2 || px > canvas.width + s * 2 || py < -s * 2 || py > canvas.height + s * 2) continue;
+    if (type === 'h') { ctx.moveTo(px, py); ctx.lineTo(px + s, py); }
+    else              { ctx.moveTo(px, py); ctx.lineTo(px, py + s); }
   }
+  ctx.stroke();
+  ctx.lineCap = 'butt';
   if (wallHover && activeTool === 'wall') {
     const wk = wKey(wallHover.type, wallHover.x, wallHover.y);
     const exists = walls.has(wk);
@@ -610,6 +757,59 @@ function tileInFractionalRoundedRect(tx, ty, frx1, fry1, frx2, fry2, R) {
   const dx = Math.max(0, Math.max(safeR - cx, cx - (W - safeR)));
   const dy = Math.max(0, Math.max(safeR - cy, cy - (H - safeR)));
   return dx * dx + dy * dy <= safeR * safeR;
+}
+
+// The squares the Rect tool would fill for the current drag. Used by both the
+// live preview and the final apply so they can never disagree.
+// Pass withTiles=false to get just the bounds (huge previews skip the tile list).
+function rectSelection(withTiles = true) {
+  let frx1, fry1, frx2, fry2, rx1, ry1, rx2, ry2;
+  if (rectOptions.snapGrid) {
+    rx1 = Math.min(mouse.rectX0, mouse.tx); ry1 = Math.min(mouse.rectY0, mouse.ty);
+    rx2 = Math.max(mouse.rectX0, mouse.tx); ry2 = Math.max(mouse.rectY0, mouse.ty);
+    frx1 = rx1; fry1 = ry1; frx2 = rx2 + 1; fry2 = ry2 + 1;
+  } else {
+    frx1 = Math.min(mouse.rectRawX0, mouse.rawX); fry1 = Math.min(mouse.rectRawY0, mouse.rawY);
+    frx2 = Math.max(mouse.rectRawX0, mouse.rawX); fry2 = Math.max(mouse.rectRawY0, mouse.rawY);
+    rx1 = Math.floor(frx1); ry1 = Math.floor(fry1);
+    rx2 = Math.max(rx1, Math.ceil(frx2) - 1); ry2 = Math.max(ry1, Math.ceil(fry2) - 1);
+  }
+  const wTiles = rx2 - rx1 + 1, hTiles = ry2 - ry1 + 1;
+  const R = Math.min(rectOptions.cornerRadius, Math.floor(Math.min(wTiles, hTiles) / 2));
+  const out = { frx1, fry1, frx2, fry2, rx1, ry1, rx2, ry2, R, tiles: null, fallback: false };
+  if (!withTiles) return out;
+
+  // Rough only erodes edges when there's an interior to keep (3×3 or bigger) —
+  // otherwise a 1×1 or thin rect would randomly lose squares entirely.
+  const rough = rectOptions.rough && wTiles >= 3 && hTiles >= 3;
+  const seed = (rx1 * 23 ^ ry1 * 47 ^ rx2 * 89 ^ ry2 * 113) | 0;
+  const tiles = [];
+  for (let y = ry1; y <= ry2; y++) {
+    for (let x = rx1; x <= rx2; x++) {
+      const ok = rectOptions.snapGrid
+        ? tileInRoundedRect(x, y, rx1, ry1, rx2, ry2, R)
+        : tileInFractionalRoundedRect(x, y, frx1, fry1, frx2, fry2, R);
+      if (!ok) continue;
+      if (rough) {
+        let isEdge;
+        if (rectOptions.snapGrid) {
+          isEdge = Math.min(x - rx1, rx2 - x) === 0 || Math.min(y - ry1, ry2 - y) === 0;
+        } else {
+          isEdge = Math.min((x + 0.5) - frx1, frx2 - (x + 0.5), (y + 0.5) - fry1, fry2 - (y + 0.5)) < 1;
+        }
+        if (isEdge && tileNoise(x, y, seed) < 0.28) continue;
+      }
+      tiles.push([x, y]);
+    }
+  }
+  // Snap off: a click or a drag that doesn't cross any square's centre would
+  // otherwise fill nothing — fall back to the squares it touches.
+  if (!tiles.length && !rectOptions.snapGrid) {
+    out.fallback = true;
+    for (let y = ry1; y <= ry2; y++) for (let x = rx1; x <= rx2; x++) tiles.push([x, y]);
+  }
+  out.tiles = tiles;
+  return out;
 }
 
 // ── Markers ────────────────────────────────────────────────────────────────────
@@ -805,6 +1005,730 @@ function removeToken(id) {
   notifyTokensChanged(); scheduleRender();
 }
 
+// ── Props ──────────────────────────────────────────────────────────────────────
+// Each prop draws itself centred on (0,0) in an unrotated W×H pixel box
+// (w×h squares). Drawn on top of tiles, so the floor underneath is kept.
+function rr(c, x, y, w, h, r) { // rounded rect path
+  c.beginPath();
+  c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.arcTo(x + w, y, x + w, y + r, r);
+  c.lineTo(x + w, y + h - r); c.arcTo(x + w, y + h, x + w - r, y + h, r);
+  c.lineTo(x + r, y + h); c.arcTo(x, y + h, x, y + h - r, r);
+  c.lineTo(x, y + r); c.arcTo(x, y, x + r, y, r); c.closePath();
+}
+const INK = 'rgba(15,10,5,0.75)';
+
+// Stalagmites (rising from the floor) and stalactites (hanging from the
+// ceiling) look alike from above, so stalactites follow the usual map
+// convention for overhead features: faded, with a dashed outline.
+function drawSpireCluster(c, W, overhead) {
+  const spires = [[-0.12, -0.08, 0.3], [0.22, 0.16, 0.18], [-0.24, 0.24, 0.13], [0.22, -0.24, 0.11]];
+  if (overhead) { c.globalAlpha *= 0.6; c.shadowBlur = 0; c.shadowOffsetY = 0; }
+  for (const [x, y, r] of spires) {
+    const cx = x * W, cy = y * W, R = r * W;
+    c.beginPath();
+    for (let k = 0; k < 9; k++) {
+      const a = k * Math.PI * 2 / 9, rr = R * (0.85 + 0.15 * ((k * 7 + Math.round(r * 100)) % 3) / 2);
+      k ? c.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr) : c.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+    }
+    c.closePath();
+    const g = c.createRadialGradient(cx - R * 0.15, cy - R * 0.15, 0, cx, cy, R);
+    g.addColorStop(0, overhead ? '#b8b2a4' : '#d8d0bc'); g.addColorStop(0.35, overhead ? '#7a7468' : '#9a907c'); g.addColorStop(1, overhead ? '#3a3630' : '#4a4236');
+    c.fillStyle = g; c.fill();
+    c.strokeStyle = overhead ? 'rgba(220,215,200,0.85)' : INK;
+    c.lineWidth = Math.max(0.8, W * 0.025);
+    if (overhead) c.setLineDash([W * 0.05, W * 0.04]);
+    c.stroke();
+    c.setLineDash([]);
+    // Tip
+    c.fillStyle = overhead ? 'rgba(230,225,210,0.7)' : '#efe8d6';
+    c.beginPath(); c.arc(cx - R * 0.1, cy - R * 0.1, Math.max(0.8, R * 0.12), 0, Math.PI * 2); c.fill();
+  }
+}
+
+// Palette groups (any prop not listed lands in "Other")
+const PROP_CATS = {
+  'Furniture':     ['chair', 'table', 'bed', 'bookshelf', 'chest', 'crate', 'barrel', 'throne', 'rug', 'weapon_rack', 'anvil'],
+  'Dungeon':       ['coffin', 'sarcophagus', 'bones', 'cage', 'trapdoor', 'ladder', 'statue', 'column', 'web'],
+  'Cave & Nature': ['stalagmite', 'stalactite', 'crystals', 'mushrooms', 'boulder', 'rubble', 'tree', 'well', 'campfire'],
+  'Magic & Light': ['magic_circle', 'altar', 'cauldron', 'brazier', 'candelabra', 'torch'],
+};
+
+const PROPS = {
+  coffin: { label: 'Coffin', w: 1, h: 2, draw(c, W, H) {
+    const hw = W * 0.4, sh = W * 0.46, hh = H * 0.46;
+    c.beginPath();
+    c.moveTo(-hw * 0.7, -hh); c.lineTo(hw * 0.7, -hh); c.lineTo(sh, -hh * 0.55);
+    c.lineTo(hw * 0.65, hh); c.lineTo(-hw * 0.65, hh); c.lineTo(-sh, -hh * 0.55); c.closePath();
+    c.fillStyle = '#5a3a22'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.05; c.stroke();
+    c.strokeStyle = 'rgba(200,160,100,0.55)'; c.lineWidth = W * 0.06;
+    c.beginPath(); c.moveTo(0, -hh * 0.6); c.lineTo(0, hh * 0.1); c.moveTo(-W * 0.15, -hh * 0.35); c.lineTo(W * 0.15, -hh * 0.35); c.stroke();
+  } },
+  sarcophagus: { label: 'Sarcophagus', w: 1, h: 2, draw(c, W, H) {
+    rr(c, -W * 0.44, -H * 0.46, W * 0.88, H * 0.92, W * 0.12);
+    c.fillStyle = '#8a8478'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.05; c.stroke();
+    rr(c, -W * 0.3, -H * 0.38, W * 0.6, H * 0.76, W * 0.25);
+    c.fillStyle = 'rgba(255,250,235,0.15)'; c.fill(); c.strokeStyle = 'rgba(30,25,15,0.4)'; c.lineWidth = W * 0.03; c.stroke();
+    c.beginPath(); c.arc(0, -H * 0.26, W * 0.13, 0, Math.PI * 2); c.stroke();
+  } },
+  boulder: { label: 'Boulder', w: 1, h: 1, draw(c, W) {
+    const r = W * 0.42, pts = [0, 0.9, 1.7, 2.6, 3.5, 4.3, 5.3].map((a, i) => [Math.cos(a) * r * [1, .85, .95, .8, 1, .9, .85][i], Math.sin(a) * r * [1, .85, .95, .8, 1, .9, .85][i]]);
+    c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath();
+    c.fillStyle = '#7a766c'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.04; c.stroke();
+    c.fillStyle = 'rgba(255,250,235,0.2)'; c.beginPath(); c.ellipse(-r * 0.25, -r * 0.3, r * 0.4, r * 0.2, -0.5, 0, Math.PI * 2); c.fill();
+  } },
+  barrel: { label: 'Barrel', w: 1, h: 1, draw(c, W) {
+    const r = W * 0.38;
+    c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.fillStyle = '#7a5230'; c.fill();
+    c.strokeStyle = '#3a3a3a'; c.lineWidth = W * 0.06; c.stroke();
+    c.beginPath(); c.arc(0, 0, r * 0.7, 0, Math.PI * 2); c.lineWidth = W * 0.035; c.stroke();
+    c.strokeStyle = 'rgba(30,15,5,0.4)'; c.lineWidth = W * 0.02;
+    c.beginPath(); for (let i = -2; i <= 2; i++) { const x = i * r * 0.3; const yy = Math.sqrt(Math.max(0, r * r * 0.49 - x * x)); c.moveTo(x, -yy); c.lineTo(x, yy); } c.stroke();
+  } },
+  crate: { label: 'Crate', w: 1, h: 1, draw(c, W) {
+    const h = W * 0.4;
+    c.fillStyle = '#8a6a3a'; c.fillRect(-h, -h, h * 2, h * 2);
+    c.strokeStyle = INK; c.lineWidth = W * 0.04; c.strokeRect(-h, -h, h * 2, h * 2);
+    c.strokeStyle = '#5a4020'; c.lineWidth = W * 0.07; c.strokeRect(-h * 0.85, -h * 0.85, h * 1.7, h * 1.7);
+    c.beginPath(); c.moveTo(-h * 0.85, -h * 0.85); c.lineTo(h * 0.85, h * 0.85); c.moveTo(h * 0.85, -h * 0.85); c.lineTo(-h * 0.85, h * 0.85); c.stroke();
+  } },
+  chest: { label: 'Chest', w: 1, h: 1, draw(c, W) {
+    const w = W * 0.8, h = W * 0.56;
+    rr(c, -w / 2, -h / 2, w, h, W * 0.06); c.fillStyle = '#7a4e24'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.04; c.stroke();
+    c.fillStyle = '#c9a84c';
+    c.fillRect(-w / 2, -h * 0.12, w, h * 0.12); c.fillRect(-w * 0.32, -h / 2, w * 0.08, h); c.fillRect(w * 0.24, -h / 2, w * 0.08, h);
+    c.fillRect(-W * 0.06, -h * 0.05, W * 0.12, W * 0.14);
+  } },
+  table: { label: 'Table', w: 2, h: 1, draw(c, W, H) {
+    rr(c, -W * 0.46, -H * 0.38, W * 0.92, H * 0.76, H * 0.1);
+    c.fillStyle = '#8a6438'; c.fill(); c.strokeStyle = INK; c.lineWidth = H * 0.05; c.stroke();
+    c.strokeStyle = 'rgba(40,20,5,0.35)'; c.lineWidth = H * 0.025;
+    c.beginPath(); c.moveTo(-W * 0.44, -H * 0.12); c.lineTo(W * 0.44, -H * 0.12); c.moveTo(-W * 0.44, H * 0.13); c.lineTo(W * 0.44, H * 0.13); c.stroke();
+  } },
+  chair: { label: 'Chair', w: 1, h: 1, draw(c, W) {
+    rr(c, -W * 0.26, -W * 0.2, W * 0.52, W * 0.5, W * 0.05); c.fillStyle = '#7a5630'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.04; c.stroke();
+    rr(c, -W * 0.3, -W * 0.34, W * 0.6, W * 0.14, W * 0.04); c.fillStyle = '#5a3e22'; c.fill(); c.stroke();
+  } },
+  bed: { label: 'Bed', w: 1, h: 2, draw(c, W, H) {
+    rr(c, -W * 0.44, -H * 0.46, W * 0.88, H * 0.92, W * 0.08); c.fillStyle = '#5a3e22'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.04; c.stroke();
+    rr(c, -W * 0.36, -H * 0.4, W * 0.72, H * 0.16, W * 0.08); c.fillStyle = '#e8e0d0'; c.fill();
+    rr(c, -W * 0.4, -H * 0.18, W * 0.8, H * 0.6, W * 0.06); c.fillStyle = '#7a2a30'; c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.moveTo(-W * 0.4, -H * 0.08); c.lineTo(W * 0.4, -H * 0.08); c.stroke();
+  } },
+  bookshelf: { label: 'Bookshelf', w: 2, h: 1, draw(c, W, H) {
+    c.fillStyle = '#4a3220'; c.fillRect(-W * 0.48, -H * 0.3, W * 0.96, H * 0.6);
+    c.strokeStyle = INK; c.lineWidth = H * 0.05; c.strokeRect(-W * 0.48, -H * 0.3, W * 0.96, H * 0.6);
+    const cols = ['#8a2a2a', '#2a4a7a', '#3a6a3a', '#a08030', '#6a3a6a'];
+    const bw = W * 0.06;
+    for (let i = 0; i < 14; i++) { c.fillStyle = cols[(i * 7) % cols.length]; c.fillRect(-W * 0.44 + i * bw * 1.08, -H * 0.22, bw, H * 0.44); }
+  } },
+  statue: { label: 'Statue', w: 1, h: 1, draw(c, W) {
+    rr(c, -W * 0.42, -W * 0.42, W * 0.84, W * 0.84, W * 0.06); c.fillStyle = '#6a665e'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.04; c.stroke();
+    c.fillStyle = '#b0aa9c';
+    c.beginPath(); c.ellipse(0, W * 0.08, W * 0.28, W * 0.16, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.beginPath(); c.arc(0, -W * 0.08, W * 0.13, 0, Math.PI * 2); c.fill(); c.stroke();
+  } },
+  brazier: { label: 'Brazier', w: 1, h: 1, draw(c, W) {
+    c.beginPath(); c.arc(0, 0, W * 0.36, 0, Math.PI * 2); c.fillStyle = '#3a3634'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.05; c.stroke();
+    const g = c.createRadialGradient(0, 0, 0, 0, 0, W * 0.3);
+    g.addColorStop(0, '#fff0a0'); g.addColorStop(0.45, '#f0a030'); g.addColorStop(1, 'rgba(200,50,10,0.2)');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, W * 0.28, 0, Math.PI * 2); c.fill();
+  } },
+  campfire: { label: 'Campfire', w: 1, h: 1, draw(c, W) {
+    c.strokeStyle = '#5a3a1e'; c.lineCap = 'round'; c.lineWidth = W * 0.12;
+    c.beginPath(); c.moveTo(-W * 0.32, -W * 0.22); c.lineTo(W * 0.32, W * 0.22); c.moveTo(W * 0.32, -W * 0.22); c.lineTo(-W * 0.32, W * 0.22); c.stroke(); c.lineCap = 'butt';
+    const g = c.createRadialGradient(0, 0, 0, 0, 0, W * 0.26);
+    g.addColorStop(0, '#fff6b0'); g.addColorStop(0.5, '#f09030'); g.addColorStop(1, 'rgba(220,60,10,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, W * 0.26, 0, Math.PI * 2); c.fill();
+  } },
+  well: { label: 'Well', w: 1, h: 1, draw(c, W) {
+    c.beginPath(); c.arc(0, 0, W * 0.42, 0, Math.PI * 2); c.fillStyle = '#7a766c'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.04; c.stroke();
+    c.strokeStyle = 'rgba(30,25,20,0.45)'; c.lineWidth = W * 0.02;
+    c.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; c.moveTo(Math.cos(a) * W * 0.28, Math.sin(a) * W * 0.28); c.lineTo(Math.cos(a) * W * 0.42, Math.sin(a) * W * 0.42); } c.stroke();
+    c.beginPath(); c.arc(0, 0, W * 0.27, 0, Math.PI * 2); c.fillStyle = '#16303e'; c.fill();
+  } },
+  bones: { label: 'Bones', w: 1, h: 1, draw(c, W) {
+    c.strokeStyle = '#e0d8c4'; c.lineCap = 'round'; c.lineWidth = W * 0.07;
+    c.beginPath(); c.moveTo(-W * 0.3, W * 0.25); c.lineTo(W * 0.15, -W * 0.05); c.moveTo(-W * 0.1, W * 0.32); c.lineTo(W * 0.32, W * 0.15); c.stroke(); c.lineCap = 'butt';
+    c.fillStyle = '#e8e0cc'; c.beginPath(); c.arc(-W * 0.12, -W * 0.18, W * 0.17, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = INK; c.lineWidth = W * 0.03; c.stroke();
+    c.fillStyle = '#2a2218'; c.beginPath(); c.arc(-W * 0.18, -W * 0.2, W * 0.04, 0, Math.PI * 2); c.arc(-W * 0.06, -W * 0.2, W * 0.04, 0, Math.PI * 2); c.fill();
+  } },
+  cauldron: { label: 'Cauldron', w: 1, h: 1, draw(c, W) {
+    c.beginPath(); c.arc(0, 0, W * 0.38, 0, Math.PI * 2); c.fillStyle = '#26242a'; c.fill(); c.strokeStyle = '#0a0a0c'; c.lineWidth = W * 0.05; c.stroke();
+    c.beginPath(); c.arc(0, 0, W * 0.28, 0, Math.PI * 2); c.fillStyle = '#4a8a3a'; c.fill();
+    c.fillStyle = 'rgba(200,255,150,0.5)'; c.beginPath(); c.arc(-W * 0.08, -W * 0.06, W * 0.05, 0, Math.PI * 2); c.arc(W * 0.1, W * 0.05, W * 0.035, 0, Math.PI * 2); c.fill();
+  } },
+  rubble: { label: 'Rubble Pile', w: 1, h: 1, draw(c, W) {
+    [[-0.2, -0.15, 0.16], [0.15, -0.2, 0.13], [0.18, 0.15, 0.17], [-0.15, 0.2, 0.12], [0.0, 0.0, 0.14]].forEach(([x, y, r], i) => {
+      c.beginPath(); for (let k = 0; k < 5; k++) { const a = k * 1.256 + i; const px = (x + Math.cos(a) * r) * W, py = (y + Math.sin(a) * r) * W; k ? c.lineTo(px, py) : c.moveTo(px, py); } c.closePath();
+      c.fillStyle = i % 2 ? '#8a8478' : '#6a665e'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.025; c.stroke();
+    });
+  } },
+  ladder: { label: 'Ladder', w: 1, h: 1, draw(c, W) {
+    c.strokeStyle = '#8a6438'; c.lineWidth = W * 0.08;
+    c.beginPath(); c.moveTo(-W * 0.22, -W * 0.44); c.lineTo(-W * 0.22, W * 0.44); c.moveTo(W * 0.22, -W * 0.44); c.lineTo(W * 0.22, W * 0.44); c.stroke();
+    c.lineWidth = W * 0.05;
+    c.beginPath(); for (let i = -3; i <= 3; i++) { c.moveTo(-W * 0.22, i * W * 0.13); c.lineTo(W * 0.22, i * W * 0.13); } c.stroke();
+  } },
+  magic_circle: { label: 'Magic Circle', w: 3, h: 3, draw(c, W) {
+    const R = W * 0.47;
+    c.shadowColor = 'rgba(120,180,255,0.9)'; c.shadowBlur = W * 0.04; c.shadowOffsetY = 0;
+    const glow = c.createRadialGradient(0, 0, 0, 0, 0, R);
+    glow.addColorStop(0, 'rgba(110,160,255,0.22)'); glow.addColorStop(0.8, 'rgba(110,160,255,0.06)'); glow.addColorStop(1, 'rgba(110,160,255,0)');
+    c.fillStyle = glow; c.beginPath(); c.arc(0, 0, R, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(170,210,255,0.9)';
+    c.lineWidth = W * 0.012; c.beginPath(); c.arc(0, 0, R * 0.98, 0, Math.PI * 2); c.stroke();
+    c.lineWidth = W * 0.006; c.beginPath(); c.arc(0, 0, R * 0.84, 0, Math.PI * 2); c.stroke();
+    c.beginPath(); c.arc(0, 0, R * 0.36, 0, Math.PI * 2); c.stroke();
+    // Rune band between the two outer rings
+    c.fillStyle = 'rgba(190,225,255,0.9)';
+    c.font = `${Math.max(5, W * 0.055)}px serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const runes = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ';
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      c.save(); c.rotate(a); c.fillText(runes[i % runes.length], 0, -R * 0.91); c.restore();
+    }
+    // Heptagram (7-pointed star)
+    c.lineWidth = W * 0.008; c.beginPath();
+    for (let i = 0; i <= 7; i++) {
+      const a = -Math.PI / 2 + (i * 3 * 2 * Math.PI) / 7;
+      const x = Math.cos(a) * R * 0.84, y = Math.sin(a) * R * 0.84;
+      i ? c.lineTo(x, y) : c.moveTo(x, y);
+    }
+    c.stroke();
+    // Small sigil circles at the star points
+    for (let i = 0; i < 7; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / 7;
+      c.beginPath(); c.arc(Math.cos(a) * R * 0.84, Math.sin(a) * R * 0.84, R * 0.06, 0, Math.PI * 2);
+      c.fillStyle = 'rgba(20,30,60,0.9)'; c.fill(); c.stroke();
+    }
+  } },
+  // ── Cave ──
+  stalagmite: { label: 'Stalagmite', w: 1, h: 1, draw(c, W) { drawSpireCluster(c, W, false); } },
+  stalactite: { label: 'Stalactite (overhead)', w: 1, h: 1, draw(c, W) { drawSpireCluster(c, W, true); } },
+  crystals: { label: 'Crystal Cluster', w: 1, h: 1, draw(c, W) {
+    const shards = [[-0.6, 0.38, 0.11], [-0.15, 0.44, 0.13], [0.35, 0.36, 0.1], [1.1, 0.3, 0.09], [2.3, 0.32, 0.1], [3.4, 0.28, 0.09], [4.6, 0.34, 0.11]];
+    c.shadowColor = 'rgba(170,120,255,0.7)'; c.shadowBlur = W * 0.15; c.shadowOffsetY = 0;
+    for (const [a, len, wd] of shards) {
+      const dx = Math.cos(a - Math.PI / 2), dy = Math.sin(a - Math.PI / 2), nx = -dy, ny = dx;
+      const L = len * W, Wd = wd * W;
+      c.beginPath();
+      c.moveTo(nx * Wd / 2, ny * Wd / 2); c.lineTo(dx * L * 0.8 + nx * Wd / 2, dy * L * 0.8 + ny * Wd / 2);
+      c.lineTo(dx * L, dy * L); c.lineTo(dx * L * 0.8 - nx * Wd / 2, dy * L * 0.8 - ny * Wd / 2);
+      c.lineTo(-nx * Wd / 2, -ny * Wd / 2); c.closePath();
+      const g = c.createLinearGradient(0, 0, dx * L, dy * L);
+      g.addColorStop(0, '#5a3a9a'); g.addColorStop(1, '#c8b0ff');
+      c.fillStyle = g; c.fill(); c.strokeStyle = 'rgba(40,20,70,0.8)'; c.lineWidth = W * 0.02; c.stroke();
+    }
+    c.shadowBlur = 0;
+    c.beginPath(); c.arc(0, 0, W * 0.1, 0, Math.PI * 2); c.fillStyle = '#4a3a5a'; c.fill();
+  } },
+  mushrooms: { label: 'Cave Mushrooms', w: 1, h: 1, draw(c, W) {
+    c.shadowColor = 'rgba(80,230,200,0.8)'; c.shadowBlur = W * 0.12; c.shadowOffsetY = 0;
+    [[-0.18, -0.12, 0.17], [0.17, -0.18, 0.12], [0.12, 0.18, 0.15], [-0.2, 0.22, 0.09]].forEach(([x, y, r]) => {
+      c.beginPath(); c.arc(x * W, y * W, r * W, 0, Math.PI * 2);
+      const g = c.createRadialGradient(x * W, y * W, 0, x * W, y * W, r * W);
+      g.addColorStop(0, '#c0fff0'); g.addColorStop(1, '#2a9a8a');
+      c.fillStyle = g; c.fill(); c.strokeStyle = 'rgba(10,50,45,0.8)'; c.lineWidth = W * 0.02; c.stroke();
+    });
+    c.shadowBlur = 0; c.fillStyle = 'rgba(255,255,255,0.75)';
+    [[-0.22, -0.16], [-0.12, -0.06], [0.15, 0.13], [0.2, -0.2]].forEach(([x, y]) => { c.beginPath(); c.arc(x * W, y * W, W * 0.025, 0, Math.PI * 2); c.fill(); });
+  } },
+  web: { label: 'Spider Web', w: 1, h: 1, draw(c, W) {
+    c.shadowBlur = 0; c.shadowOffsetY = 0;
+    c.strokeStyle = 'rgba(235,235,235,0.6)'; c.lineWidth = Math.max(0.5, W * 0.012);
+    const R = W * 0.48, spokes = 8;
+    c.beginPath();
+    for (let i = 0; i < spokes; i++) { const a = i * Math.PI * 2 / spokes; c.moveTo(0, 0); c.lineTo(Math.cos(a) * R, Math.sin(a) * R); }
+    for (let ring = 1; ring <= 4; ring++) {
+      const r = R * ring / 4.4;
+      for (let i = 0; i <= spokes; i++) {
+        const a = i * Math.PI * 2 / spokes, rr = r * (i % 2 ? 0.9 : 1);
+        i ? c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+    }
+    c.stroke();
+  } },
+
+  // ── Throne room / furnishings ──
+  throne: { label: 'Throne', w: 1, h: 1, draw(c, W) {
+    // High back along the top edge, armrests at the sides, cushioned seat
+    rr(c, -W * 0.4, -W * 0.44, W * 0.8, W * 0.86, W * 0.06); c.fillStyle = '#6a4a1e'; c.fill();
+    c.strokeStyle = INK; c.lineWidth = W * 0.04; c.stroke();
+    c.fillStyle = '#c9a84c';
+    c.beginPath(); c.moveTo(-W * 0.4, -W * 0.2); c.lineTo(-W * 0.4, -W * 0.44);
+    for (let i = 0; i <= 4; i++) { c.lineTo(-W * 0.4 + i * W * 0.2, -W * (i % 2 ? 0.36 : 0.5)); }
+    c.lineTo(W * 0.4, -W * 0.2); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#8a6a2e';
+    c.fillRect(-W * 0.4, -W * 0.2, W * 0.13, W * 0.62); c.fillRect(W * 0.27, -W * 0.2, W * 0.13, W * 0.62);
+    rr(c, -W * 0.25, -W * 0.16, W * 0.5, W * 0.52, W * 0.06); c.fillStyle = '#8a1e2a'; c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = W * 0.02; c.stroke();
+    c.fillStyle = '#e8d070'; c.beginPath(); c.arc(0, -W * 0.36, W * 0.05, 0, Math.PI * 2); c.fill();
+  } },
+  rug: { label: 'Rug', w: 2, h: 3, draw(c, W, H) {
+    c.shadowBlur = 0; c.shadowOffsetY = 0;
+    c.fillStyle = '#7a1e24'; c.fillRect(-W * 0.42, -H * 0.44, W * 0.84, H * 0.88);
+    c.strokeStyle = '#c9a84c'; c.lineWidth = W * 0.03;
+    c.strokeRect(-W * 0.36, -H * 0.4, W * 0.72, H * 0.8);
+    c.strokeStyle = 'rgba(201,168,76,0.6)'; c.lineWidth = W * 0.015;
+    c.strokeRect(-W * 0.3, -H * 0.35, W * 0.6, H * 0.7);
+    c.beginPath(); c.moveTo(0, -H * 0.24); c.lineTo(W * 0.2, 0); c.lineTo(0, H * 0.24); c.lineTo(-W * 0.2, 0); c.closePath();
+    c.fillStyle = 'rgba(201,168,76,0.35)'; c.fill(); c.stroke();
+    // Fringe on the short ends
+    c.strokeStyle = '#d8c8a0'; c.lineWidth = W * 0.012; c.beginPath();
+    for (let i = 0; i <= 12; i++) { const x = -W * 0.4 + i * W * 0.8 / 12; c.moveTo(x, -H * 0.44); c.lineTo(x, -H * 0.48); c.moveTo(x, H * 0.44); c.lineTo(x, H * 0.48); }
+    c.stroke();
+  } },
+  altar: { label: 'Altar', w: 2, h: 1, draw(c, W, H) {
+    rr(c, -W * 0.46, -H * 0.38, W * 0.92, H * 0.76, H * 0.06); c.fillStyle = '#7a766c'; c.fill();
+    c.strokeStyle = INK; c.lineWidth = H * 0.05; c.stroke();
+    c.fillStyle = '#4a2060'; c.fillRect(-W * 0.12, -H * 0.38, W * 0.24, H * 0.76);
+    c.fillStyle = '#c9a84c'; c.fillRect(-W * 0.12, H * 0.28, W * 0.24, H * 0.06);
+    for (const x of [-0.36, 0.36]) {
+      c.fillStyle = '#e8e0cc'; c.beginPath(); c.arc(x * W, 0, H * 0.1, 0, Math.PI * 2); c.fill();
+      c.shadowColor = 'rgba(255,190,80,0.9)'; c.shadowBlur = H * 0.3;
+      c.fillStyle = '#ffd070'; c.beginPath(); c.arc(x * W, 0, H * 0.05, 0, Math.PI * 2); c.fill();
+      c.shadowBlur = 0;
+    }
+  } },
+  candelabra: { label: 'Candelabra', w: 1, h: 1, draw(c, W) {
+    c.strokeStyle = '#a08840'; c.lineWidth = W * 0.04;
+    c.beginPath(); c.arc(0, 0, W * 0.26, 0, Math.PI * 2); c.stroke();
+    c.beginPath(); c.arc(0, 0, W * 0.08, 0, Math.PI * 2); c.fillStyle = '#c9a84c'; c.fill();
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + i * Math.PI * 2 / 5, x = Math.cos(a) * W * 0.26, y = Math.sin(a) * W * 0.26;
+      c.fillStyle = '#e8e0cc'; c.beginPath(); c.arc(x, y, W * 0.06, 0, Math.PI * 2); c.fill();
+      c.shadowColor = 'rgba(255,190,80,1)'; c.shadowBlur = W * 0.15; c.shadowOffsetY = 0;
+      c.fillStyle = '#ffd070'; c.beginPath(); c.arc(x, y, W * 0.03, 0, Math.PI * 2); c.fill();
+      c.shadowBlur = 0;
+    }
+  } },
+  torch: { label: 'Wall Torch', w: 1, h: 1, draw(c, W) {
+    // Bracket on the top edge (rotate to face any wall), flame below it
+    c.fillStyle = '#3a3634'; c.fillRect(-W * 0.12, -W * 0.5, W * 0.24, W * 0.12);
+    c.strokeStyle = '#5a3a1e'; c.lineWidth = W * 0.08; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(0, -W * 0.42); c.lineTo(0, -W * 0.12); c.stroke(); c.lineCap = 'butt';
+    const g = c.createRadialGradient(0, -W * 0.08, 0, 0, -W * 0.08, W * 0.4);
+    g.addColorStop(0, 'rgba(255,240,170,0.95)'); g.addColorStop(0.25, 'rgba(250,160,50,0.6)'); g.addColorStop(1, 'rgba(250,120,30,0)');
+    c.shadowBlur = 0; c.fillStyle = g; c.beginPath(); c.arc(0, -W * 0.08, W * 0.4, 0, Math.PI * 2); c.fill();
+  } },
+
+  // ── Dungeon / workshop ──
+  column: { label: 'Column', w: 1, h: 1, draw(c, W) {
+    c.beginPath(); c.arc(0, 0, W * 0.44, 0, Math.PI * 2); c.fillStyle = '#5a564e'; c.fill();
+    c.strokeStyle = INK; c.lineWidth = W * 0.04; c.stroke();
+    const g = c.createRadialGradient(-W * 0.1, -W * 0.1, 0, 0, 0, W * 0.34);
+    g.addColorStop(0, '#c8c2b4'); g.addColorStop(1, '#7a766c');
+    c.beginPath(); c.arc(0, 0, W * 0.34, 0, Math.PI * 2); c.fillStyle = g; c.fill();
+    c.strokeStyle = 'rgba(40,35,25,0.35)'; c.lineWidth = W * 0.015; c.beginPath();
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; c.moveTo(Math.cos(a) * W * 0.2, Math.sin(a) * W * 0.2); c.lineTo(Math.cos(a) * W * 0.34, Math.sin(a) * W * 0.34); }
+    c.stroke();
+  } },
+  cage: { label: 'Cage', w: 1, h: 1, draw(c, W) {
+    const h = W * 0.42;
+    c.fillStyle = 'rgba(10,8,6,0.55)'; c.fillRect(-h, -h, h * 2, h * 2);
+    c.strokeStyle = '#4a4a4a'; c.lineWidth = W * 0.05; c.strokeRect(-h, -h, h * 2, h * 2);
+    c.lineWidth = W * 0.03; c.beginPath();
+    for (let i = 1; i < 5; i++) { const t = -h + i * h * 2 / 5; c.moveTo(t, -h); c.lineTo(t, h); }
+    c.moveTo(-h, 0); c.lineTo(h, 0); c.stroke();
+  } },
+  trapdoor: { label: 'Trapdoor', w: 1, h: 1, draw(c, W) {
+    c.shadowBlur = 0; c.shadowOffsetY = 0;
+    const h = W * 0.42;
+    c.fillStyle = '#6a4a2a'; c.fillRect(-h, -h, h * 2, h * 2);
+    c.strokeStyle = INK; c.lineWidth = W * 0.04; c.strokeRect(-h, -h, h * 2, h * 2);
+    c.strokeStyle = 'rgba(30,15,5,0.5)'; c.lineWidth = W * 0.02; c.beginPath();
+    for (let i = 1; i < 4; i++) { const x = -h + i * h * 2 / 4; c.moveTo(x, -h); c.lineTo(x, h); } c.stroke();
+    c.fillStyle = '#3a3a3a'; c.fillRect(-h, -h * 0.7, W * 0.1, W * 0.14); c.fillRect(-h, h * 0.4, W * 0.1, W * 0.14);
+    c.strokeStyle = '#8a8a8a'; c.lineWidth = W * 0.03; c.beginPath(); c.arc(h * 0.6, 0, W * 0.07, 0, Math.PI * 2); c.stroke();
+  } },
+  weapon_rack: { label: 'Weapon Rack', w: 2, h: 1, draw(c, W, H) {
+    c.fillStyle = '#5a3e22'; c.fillRect(-W * 0.46, -H * 0.12, W * 0.92, H * 0.24);
+    c.strokeStyle = INK; c.lineWidth = H * 0.04; c.strokeRect(-W * 0.46, -H * 0.12, W * 0.92, H * 0.24);
+    c.lineCap = 'round';
+    [[-0.34, '#b8bcc4'], [-0.17, '#8a6438'], [0, '#b8bcc4'], [0.17, '#8a6438'], [0.34, '#b8bcc4']].forEach(([x, col], i) => {
+      c.strokeStyle = col; c.lineWidth = H * (i % 2 ? 0.06 : 0.09);
+      c.beginPath(); c.moveTo(x * W, -H * 0.4); c.lineTo(x * W, H * 0.4); c.stroke();
+    });
+    c.lineCap = 'butt';
+  } },
+  anvil: { label: 'Anvil', w: 1, h: 1, draw(c, W) {
+    c.beginPath();
+    c.moveTo(-W * 0.44, 0); c.quadraticCurveTo(-W * 0.3, -W * 0.16, -W * 0.14, -W * 0.16);
+    c.lineTo(W * 0.36, -W * 0.16); c.lineTo(W * 0.36, W * 0.16); c.lineTo(-W * 0.14, W * 0.16);
+    c.quadraticCurveTo(-W * 0.3, W * 0.16, -W * 0.44, 0); c.closePath();
+    c.fillStyle = '#4a4c52'; c.fill(); c.strokeStyle = INK; c.lineWidth = W * 0.035; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(-W * 0.1, -W * 0.1, W * 0.4, W * 0.08);
+  } },
+
+  tree: { label: 'Tree (Large)', w: 2, h: 2, draw(c, W) {
+    const blobs = [[0, 0, 0.36], [-0.2, -0.16, 0.22], [0.2, -0.14, 0.22], [0.18, 0.2, 0.22], [-0.2, 0.18, 0.22]];
+    c.fillStyle = '#244a20'; blobs.forEach(([x, y, r]) => { c.beginPath(); c.arc(x * W, y * W, r * W, 0, Math.PI * 2); c.fill(); });
+    c.strokeStyle = 'rgba(10,25,8,0.6)'; c.lineWidth = W * 0.015; blobs.slice(1).forEach(([x, y, r]) => { c.beginPath(); c.arc(x * W, y * W, r * W, 0, Math.PI * 2); c.stroke(); });
+    c.fillStyle = 'rgba(130,180,80,0.3)'; blobs.forEach(([x, y, r]) => { c.beginPath(); c.arc((x - 0.05) * W, (y - 0.05) * W, r * W * 0.55, 0, Math.PI * 2); c.fill(); });
+  } },
+};
+
+const snapHalf = v => Math.round(v * 2) / 2;
+const PROP_MIN = 0.5, PROP_MAX = 12;
+
+// Unrotated size in squares: the prop's own (if resized) or its default
+function propSize(p) {
+  const d = PROPS[p.kind] || { w: 1, h: 1 };
+  return { w: p.w ?? d.w, h: p.h ?? d.h };
+}
+
+// On-map footprint in squares once rotated (odd quarter-turns swap width/height)
+function propDims(p) {
+  const { w, h } = propSize(p);
+  return p.rot % 2 ? { fw: h, fh: w } : { fw: w, fh: h };
+}
+
+// `p` needs kind/rot and optionally w/h
+function drawProp(c, p, px, py, s, alpha) {
+  const def = PROPS[p.kind];
+  if (!def) return;
+  const { w, h } = propSize(p);
+  const { fw, fh } = propDims(p);
+  c.save();
+  if (alpha !== undefined) c.globalAlpha = alpha;
+  c.translate(px + fw * s / 2, py + fh * s / 2);
+  c.rotate((p.rot || 0) * Math.PI / 2);
+  c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = Math.max(2, s * 0.15); c.shadowOffsetY = s * 0.05;
+  // Art is drawn to fit its default proportions, then stretched to the prop's size
+  c.scale(w / def.w, h / def.h);
+  def.draw(c, def.w * s, def.h * s);
+  c.restore();
+}
+
+// Topmost prop under a map point (in squares, fractional)
+function propAtPoint(wx, wy) {
+  for (let i = props.length - 1; i >= 0; i--) {
+    const p = props[i], { fw, fh } = propDims(p);
+    if (wx >= p.x && wx < p.x + fw && wy >= p.y && wy < p.y + fh) return p;
+  }
+  return null;
+}
+
+// Screen-space box of the selected prop's resize handle (bottom-right corner)
+function propHandleHit(cx, cy) {
+  const p = props.find(q => q.id === selectedPropId);
+  if (!p) return false;
+  const s = tileS(), { fw, fh } = propDims(p);
+  const hx = view.ox + (p.x + fw) * s, hy = view.oy + (p.y + fh) * s;
+  return Math.abs(cx - hx) <= 7 && Math.abs(cy - hy) <= 7;
+}
+
+// Where a new prop goes so its footprint is centred on the cursor square
+function propAnchor(kind, rot, tx, ty) {
+  const { fw, fh } = propDims({ kind, rot });
+  return { x: tx - Math.floor((fw - 1) / 2), y: ty - Math.floor((fh - 1) / 2) };
+}
+
+function renderProps(s) {
+  for (const p of props) {
+    const { x: px, y: py } = toScreen(p.x, p.y);
+    const { fw, fh } = propDims(p);
+    if (px > canvas.width || py > canvas.height || px + fw * s < 0 || py + fh * s < 0) continue;
+    drawProp(ctx, p, px, py, s);
+    if (activeTool === 'prop' && p.id === selectedPropId) {
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+      ctx.strokeRect(px + 1, py + 1, fw * s - 2, fh * s - 2);
+      ctx.setLineDash([]);
+      // Resize handle
+      const hx = px + fw * s, hy = py + fh * s;
+      ctx.fillStyle = '#ffd700'; ctx.fillRect(hx - 5, hy - 5, 10, 10);
+      ctx.strokeStyle = '#0a0908'; ctx.lineWidth = 1; ctx.strokeRect(hx - 5, hy - 5, 10, 10);
+    }
+  }
+  // Placement ghost under the cursor
+  if (activeTool === 'prop' && mouse.onCanvas && !propDrag && !spaceDown &&
+      !propAtPoint(mouse.rawX, mouse.rawY) && !propHandleHit(mouse.cx ?? -99, mouse.cy ?? -99)) {
+    const a = propAnchor(selectedProp, propRot, mouse.tx, mouse.ty);
+    const { x: px, y: py } = toScreen(a.x, a.y);
+    drawProp(ctx, { kind: selectedProp, rot: propRot }, px, py, s, 0.5);
+  }
+}
+
+function notifyPropSelect() {
+  const p = props.find(q => q.id === selectedPropId);
+  if (!p) { window.__editorOnPropSelect?.(null); return; }
+  const { w, h } = propSize(p), d = PROPS[p.kind];
+  window.__editorOnPropSelect?.({ label: d.label, w, h, resized: w !== d.w || h !== d.h });
+}
+
+function selectPropById(id) {
+  selectedPropId = id;
+  notifyPropSelect();
+  scheduleRender();
+}
+
+function placeProp(kind, tx, ty) {
+  if (!PROPS[kind]) return;
+  saveUndo();
+  const a = propAnchor(kind, propRot, tx, ty);
+  const p = { id: crypto.randomUUID(), kind, x: a.x, y: a.y, rot: propRot };
+  props.push(p);
+  selectPropById(p.id);
+}
+
+function deleteProp(id = selectedPropId) {
+  const i = props.findIndex(p => p.id === id);
+  if (i < 0) return;
+  saveUndo();
+  props.splice(i, 1);
+  if (selectedPropId === id) selectPropById(null);
+  scheduleRender();
+}
+
+// Rotate the selected prop (around its centre) — or, with none selected, the next one placed
+function rotateProp(dir = 1) {
+  const p = props.find(q => q.id === selectedPropId);
+  if (!p) { propRot = (propRot + dir + 4) % 4; scheduleRender(); return; }
+  saveUndo();
+  const before = propDims(p);
+  const cx = p.x + before.fw / 2, cy = p.y + before.fh / 2;
+  p.rot = (p.rot + dir + 4) % 4;
+  const after = propDims(p);
+  p.x = snapHalf(cx - after.fw / 2); p.y = snapHalf(cy - after.fh / 2);
+  propRot = p.rot;
+  scheduleRender();
+}
+
+// Set the selected prop's on-map footprint (fw × fh squares), keeping its top-left
+function setPropFootprint(p, fw, fh) {
+  fw = Math.min(PROP_MAX, Math.max(PROP_MIN, snapHalf(fw)));
+  fh = Math.min(PROP_MAX, Math.max(PROP_MIN, snapHalf(fh)));
+  const d = PROPS[p.kind];
+  // Store the unrotated size; drop it when it's back to the default
+  const [w, h] = p.rot % 2 ? [fh, fw] : [fw, fh];
+  if (w === d.w && h === d.h) { delete p.w; delete p.h; } else { p.w = w; p.h = h; }
+}
+
+// Grow/shrink the selected prop by half a square on its shorter side, keeping
+// proportions and its centre. step: +1 / -1; 0 resets to the default size.
+function scaleProp(step) {
+  const p = props.find(q => q.id === selectedPropId);
+  if (!p) return;
+  saveUndo();
+  const before = propDims(p);
+  const cx = p.x + before.fw / 2, cy = p.y + before.fh / 2;
+  if (step === 0) { delete p.w; delete p.h; }
+  else {
+    const short = Math.min(before.fw, before.fh);
+    const k = Math.max(PROP_MIN, short + step * 0.5) / short;
+    setPropFootprint(p, before.fw * k, before.fh * k);
+  }
+  const after = propDims(p);
+  p.x = snapHalf(cx - after.fw / 2); p.y = snapHalf(cy - after.fh / 2);
+  notifyPropSelect();
+  scheduleRender();
+}
+
+function selectPropKind(kind) {
+  if (!PROPS[kind]) return;
+  selectedProp = kind;
+  document.querySelectorAll('.palette-prop').forEach(el => el.classList.toggle('selected', el.dataset.prop === kind));
+  if (activeTool !== 'prop') selectTool('prop');
+  scheduleRender();
+}
+
+// ── Text boxes ─────────────────────────────────────────────────────────────────
+// Word-wraps a box's text at the current zoom. Shared by drawing, hit-testing
+// and the inline editor so all three agree on the box's size.
+function textboxLayout(tb, s) {
+  const fs  = Math.max(5, (TEXTBOX_SIZES[tb.size] || TEXTBOX_SIZES.m) * s);
+  const pad = fs * 0.45;
+  const lh  = fs * 1.25;
+  const maxW = Math.max(fs, tb.w * s - pad * 2);
+  ctx.font = `${fs}px Georgia, serif`;
+  const lines = [];
+  for (const para of String(tb.text || '').split('\n')) {
+    let line = '';
+    for (const word of para.split(' ')) {
+      const test = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(test).width > maxW) { lines.push(line); line = word; }
+      else line = test;
+    }
+    lines.push(line);
+  }
+  return { fs, pad, lh, lines, wPx: tb.w * s, hPx: Math.max(1, lines.length) * lh + pad * 2 };
+}
+
+function textboxRect(tb, s) {
+  const L = textboxLayout(tb, s);
+  return { x: view.ox + tb.x * s, y: view.oy + tb.y * s, w: L.wPx, h: L.hPx, L };
+}
+
+function textboxAt(cx, cy) {
+  const s = tileS();
+  for (let i = textboxes.length - 1; i >= 0; i--) {
+    const r = textboxRect(textboxes[i], s);
+    if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) return textboxes[i];
+  }
+  return null;
+}
+
+// The width handle sits on the right edge, vertically centred
+function textboxResizeHit(cx, cy) {
+  const tb = textboxes.find(t => t.id === selectedTextboxId);
+  if (!tb) return false;
+  const r = textboxRect(tb, tileS());
+  return Math.abs(cx - (r.x + r.w)) <= 6 && cy >= r.y - 4 && cy <= r.y + r.h + 4;
+}
+
+const TEXTBOX_BG = {
+  dark:      { fill: 'rgba(14,12,9,0.85)', stroke: 'rgba(201,168,76,0.35)' },
+  parchment: { fill: '#d9c9a3',            stroke: '#8a7448' },
+  none:      null,
+};
+
+function renderTextboxes(s) {
+  for (const tb of textboxes) {
+    const { x, y, w, h, L } = textboxRect(tb, s);
+    if (x > canvas.width || y > canvas.height || x + w < 0 || y + h < 0) continue;
+    const bg = TEXTBOX_BG[tb.bg];
+    if (bg) {
+      ctx.fillStyle = bg.fill; ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = bg.stroke; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    }
+    if (tb.id !== editingTextboxId) {
+      ctx.font = `${L.fs}px Georgia, serif`;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = tb.color || '#e8e0d0';
+      if (!bg) { ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = Math.max(2, L.fs * 0.25); }
+      L.lines.forEach((line, i) => ctx.fillText(line, x + L.pad, y + L.pad + i * L.lh + L.lh / 2));
+      ctx.shadowBlur = 0;
+    }
+    if (activeTool === 'text' && tb.id === selectedTextboxId) {
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+      ctx.strokeRect(x - 2.5, y - 2.5, w + 5, h + 5);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(x + w - 3, y + h / 2 - 7, 6, 14);
+    }
+  }
+
+  // Box being dragged out
+  if (textboxDrag?.mode === 'create') {
+    const { x0, y0, x1, y1 } = textboxDrag;
+    const px = view.ox + Math.min(x0, x1) * s, py = view.oy + Math.min(y0, y1) * s;
+    ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 3]);
+    ctx.strokeRect(px, py, Math.abs(x1 - x0) * s, Math.abs(y1 - y0) * s);
+    ctx.setLineDash([]);
+  }
+}
+
+function notifyTextboxSelect() {
+  const tb = textboxes.find(t => t.id === selectedTextboxId);
+  window.__editorOnTextboxSelect?.(tb ? { size: tb.size, color: tb.color, bg: tb.bg } : null);
+}
+
+function selectTextbox(id) {
+  selectedTextboxId = id;
+  notifyTextboxSelect();
+  scheduleRender();
+}
+
+function createTextbox(x, y, w) {
+  saveUndo();
+  const tb = { id: crypto.randomUUID(), x: Math.round(x * 20) / 20, y: Math.round(y * 20) / 20, w: Math.max(1, w), text: '', ...textboxStyle };
+  textboxes.push(tb);
+  selectTextbox(tb.id);
+  openTextEditor(tb, true);
+}
+
+function deleteTextbox(id) {
+  const i = textboxes.findIndex(t => t.id === id);
+  if (i < 0) return;
+  saveUndo();
+  textboxes.splice(i, 1);
+  if (selectedTextboxId === id) selectTextbox(null);
+  scheduleRender();
+}
+
+// Inline editing: a textarea laid exactly over the box, kept in place on pan/zoom.
+function openTextEditor(tb, isNew) {
+  commitTextEdit();
+  editingTextboxId = tb.id;
+  editingIsNew = !!isNew;
+  if (!textEditorEl) {
+    textEditorEl = document.createElement('textarea');
+    textEditorEl.className = 'tb-editor';
+    textEditorEl.spellcheck = true;
+    textEditorEl.addEventListener('blur', commitTextEdit);
+    textEditorEl.addEventListener('keydown', e => {
+      if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+        e.preventDefault(); commitTextEdit(); canvas.focus();
+      }
+    });
+    textEditorEl.addEventListener('input', () => {
+      const t = textboxes.find(b => b.id === editingTextboxId);
+      if (t) { t.text = textEditorEl.value; positionTextEditor(); scheduleRender(); }
+    });
+    textEditorEl.addEventListener('mousedown', e => e.stopPropagation());
+  }
+  const wrap = document.getElementById('canvas-wrap');
+  if (textEditorEl.parentElement !== wrap) wrap.appendChild(textEditorEl);
+  textEditorEl._original = tb.text;
+  textEditorEl.value = tb.text;
+  textEditorEl.style.display = 'block';
+  positionTextEditor();
+  textEditorEl.focus();
+  textEditorEl.setSelectionRange(tb.text.length, tb.text.length);
+  scheduleRender();
+}
+
+function positionTextEditor() {
+  if (!editingTextboxId || !textEditorEl) return;
+  const tb = textboxes.find(t => t.id === editingTextboxId);
+  if (!tb) { commitTextEdit(); return; }
+  const { x, y, w, h, L } = textboxRect(tb, tileS());
+  Object.assign(textEditorEl.style, {
+    left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`,
+    fontSize: `${L.fs}px`, lineHeight: `${L.lh}px`, padding: `${L.pad}px`,
+    color: tb.color || '#e8e0d0',
+  });
+}
+
+// Ends inline editing. Mutates the box in place (never reassigns `textboxes`)
+// so it's safe to call while a level switch is half-done.
+function commitTextEdit() {
+  if (!editingTextboxId) return;
+  const id = editingTextboxId;
+  editingTextboxId = null;
+  const original = textEditorEl._original ?? '';
+  const value = textEditorEl.value.replace(/\s+$/, '');
+  textEditorEl.style.display = 'none';
+  const i = textboxes.findIndex(t => t.id === id);
+  if (i < 0) return;
+  if (!value.trim()) {
+    // Empty box: a new one simply vanishes (its creation undo entry covers it)
+    if (!editingIsNew) { textboxes[i].text = original; saveUndo(); }
+    textboxes.splice(i, 1);
+    if (selectedTextboxId === id) { selectedTextboxId = null; notifyTextboxSelect(); }
+  } else if (value !== original && !editingIsNew) {
+    // Record the pre-edit text for undo, then apply the new text
+    textboxes[i].text = original;
+    saveUndo();
+    textboxes[i].text = value;
+  } else {
+    textboxes[i].text = value;
+  }
+  scheduleRender();
+}
+
+function setTextboxStyle(opts) {
+  for (const k of ['size', 'color', 'bg']) if (opts?.[k] !== undefined) textboxStyle[k] = opts[k];
+  const tb = textboxes.find(t => t.id === selectedTextboxId);
+  if (tb) {
+    saveUndo();
+    for (const k of ['size', 'color', 'bg']) if (opts?.[k] !== undefined) tb[k] = opts[k];
+    positionTextEditor();
+    scheduleRender();
+  }
+}
+
 // ── Notes ──────────────────────────────────────────────────────────────────────
 // Screen anchor (viewport coords) just right of a square, for React popovers.
 function tileClientAnchor(x, y) {
@@ -870,6 +1794,23 @@ function onTokenDrop(e) {
   if (!target) { scheduleRender(); return; }
   try {
     const { type, id, name } = JSON.parse(raw);
+    if (type === 'prop') {
+      const kind = JSON.parse(raw).prop;
+      if (PROPS[kind]) { selectPropKind(kind); placeProp(kind, target.x, target.y); canvas.focus(); }
+      scheduleRender();
+      return;
+    }
+    if (type === 'textbox') {
+      // Free-placed: use the exact drop point, not the square
+      const { cx, cy } = getPos(e);
+      const s = tileS();
+      const at = (e.clientX || e.clientY)
+        ? { x: (cx - view.ox) / s, y: (cy - view.oy) / s }
+        : { x: target.x, y: target.y };
+      selectTool('text');
+      createTextbox(at.x, at.y, 4);
+      return;
+    }
     if (!TOKEN_TYPES[type]) return;
     const tok = { id: crypto.randomUUID(), x: target.x, y: target.y, type, refId: id ?? null, name: name || '' };
     if (!hasDuplicateToken(tok, tok.x, tok.y)) {
@@ -1054,6 +1995,215 @@ function drawTilePattern(c, def, tileKey, sx, sy, s, tx, ty, g) {
       c.stroke();
       break;
     }
+
+    case 'arcane': {
+      // Glowing rune circle per square, with ley lines joining neighbouring arcane squares
+      const cx = sx + s / 2, cy = sy + s / 2, r = s * 0.34;
+      const glow = c.createRadialGradient(cx, cy, 0, cx, cy, s * 0.5);
+      glow.addColorStop(0, 'rgba(110,160,255,0.22)'); glow.addColorStop(1, 'rgba(110,160,255,0)');
+      c.fillStyle = glow; c.fillRect(sx, sy, s, s);
+      c.strokeStyle = 'rgba(160,205,255,0.7)'; c.lineWidth = Math.max(0.6, s * 0.03);
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+      c.beginPath();
+      // Inscribed square, alternating orientation in a checker so the floor isn't uniform
+      const rot = ((tx + ty) % 2 === 0) ? Math.PI / 4 : 0;
+      for (let i = 0; i <= 4; i++) {
+        const a = rot + i * Math.PI / 2, x = cx + Math.cos(a) * r * 0.78, y = cy + Math.sin(a) * r * 0.78;
+        i ? c.lineTo(x, y) : c.moveTo(x, y);
+      }
+      c.stroke();
+      c.fillStyle = 'rgba(200,230,255,0.8)';
+      c.beginPath(); c.arc(cx, cy, Math.max(0.8, s * 0.04), 0, Math.PI * 2); c.fill();
+      const joins = (dx, dy) => g && g.get(key(tx + dx, ty + dy)) === tileKey;
+      c.strokeStyle = 'rgba(140,190,255,0.35)';
+      c.beginPath();
+      if (joins(1, 0)) { c.moveTo(cx + r, cy); c.lineTo(sx + s, cy); }
+      if (joins(-1, 0)) { c.moveTo(cx - r, cy); c.lineTo(sx, cy); }
+      if (joins(0, 1)) { c.moveTo(cx, cy + r); c.lineTo(cx, sy + s); }
+      if (joins(0, -1)) { c.moveTo(cx, cy - r); c.lineTo(cx, sy); }
+      c.stroke();
+      break;
+    }
+
+    // ── Nature ──
+    case 'canopy':
+    case 'pine': {
+      const pine = def.pattern === 'pine';
+      c.save(); c.beginPath(); c.rect(sx, sy, s, s); c.clip();
+      // Leaf clusters (round) or needle tufts (pointed), dark first then light
+      // Small clusters kept inside the square, so nothing gets cut at the edge
+      // (cut shapes make the square grid visible through the foliage)
+      for (let i = 0; i < 10; i++) {
+        const r = s * (0.09 + 0.08 * n(i + 20));
+        const x = sx + r + n(i) * (s - 2 * r), y = sy + r + n(i + 10) * (s - 2 * r);
+        c.fillStyle = i < 5 ? (pine ? 'rgba(5,20,12,0.35)' : 'rgba(10,30,8,0.32)')
+                            : (pine ? 'rgba(90,140,100,0.25)' : 'rgba(120,170,80,0.26)');
+        c.beginPath();
+        if (pine) { c.moveTo(x, y - r); c.lineTo(x + r * 0.8, y + r * 0.7); c.lineTo(x - r * 0.8, y + r * 0.7); c.closePath(); }
+        else c.arc(x, y, r, 0, Math.PI * 2);
+        c.fill();
+      }
+      // Shade the canopy's outer edge so tree outlines read against the ground
+      const edge = (dx, dy) => !g || !['canopy', 'pine'].includes(g.get(key(tx + dx, ty + dy)));
+      const band = s * 0.22;
+      const shade = (x0, y0, x1, y1, w, h) => {
+        const gr = c.createLinearGradient(x0, y0, x1, y1);
+        gr.addColorStop(0, 'rgba(0,0,0,0.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+        c.fillStyle = gr; c.fillRect(Math.min(x0, x1), Math.min(y0, y1), w, h);
+      };
+      if (edge(-1, 0)) shade(sx, sy, sx + band, sy, band, s);
+      if (edge(1, 0))  shade(sx + s, sy, sx + s - band, sy, band, s);
+      if (edge(0, -1)) shade(sx, sy, sx, sy + band, s, band);
+      if (edge(0, 1))  shade(sx, sy + s, sx, sy + s - band, s, band);
+      c.restore();
+      break;
+    }
+    case 'trunk': {
+      const cx = sx + s / 2, cy = sy + s / 2, r = s * 0.36;
+      c.fillStyle = 'rgba(0,0,0,0.3)';
+      c.beginPath(); c.ellipse(cx + r * 0.15, cy + r * 0.2, r, r * 0.95, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#5a3e22';
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = 'rgba(30,18,8,0.6)'; c.lineWidth = Math.max(0.6, s * 0.03);
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+      c.strokeStyle = 'rgba(200,160,110,0.35)';
+      c.beginPath(); c.arc(cx, cy, r * 0.6, 0, Math.PI * 2); c.arc(cx, cy, r * 0.28, 0, Math.PI * 2); c.stroke();
+      break;
+    }
+    case 'bush': {
+      const cx = sx + s * (0.45 + 0.1 * n(1)), cy = sy + s * (0.45 + 0.1 * n(2)), r = s * 0.36;
+      c.fillStyle = 'rgba(0,0,0,0.28)';
+      c.beginPath(); c.arc(cx + r * 0.15, cy + r * 0.2, r, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#2e4a24';
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+      for (let i = 0; i < 4; i++) {
+        c.fillStyle = 'rgba(120,170,80,0.35)';
+        c.beginPath(); c.arc(cx + (n(i + 3) - 0.6) * r, cy + (n(i + 7) - 0.6) * r, r * 0.35, 0, Math.PI * 2); c.fill();
+      }
+      break;
+    }
+    case 'boulder': {
+      const cx = sx + s / 2, cy = sy + s / 2, r = s * 0.4, a0 = n(1) * Math.PI;
+      const pts = [];
+      for (let i = 0; i < 7; i++) {
+        const a = a0 + (i / 7) * Math.PI * 2, rr = r * (0.75 + 0.25 * n(i + 2));
+        pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+      }
+      const poly = (ox, oy) => { c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x + ox, y + oy) : c.moveTo(x + ox, y + oy)); c.closePath(); };
+      c.fillStyle = 'rgba(0,0,0,0.35)'; poly(s * 0.05, s * 0.06); c.fill();
+      c.fillStyle = '#7a766c'; poly(0, 0); c.fill();
+      c.strokeStyle = 'rgba(20,18,14,0.55)'; c.lineWidth = Math.max(0.7, s * 0.035); c.stroke();
+      c.fillStyle = 'rgba(255,250,235,0.18)';
+      c.beginPath(); c.ellipse(cx - r * 0.25, cy - r * 0.3, r * 0.4, r * 0.22, -0.5, 0, Math.PI * 2); c.fill();
+      break;
+    }
+    case 'tallgrass': {
+      c.lineWidth = Math.max(0.6, s * 0.03);
+      for (let i = 0; i < 10; i++) {
+        const x = sx + n(i) * s, y = sy + (0.35 + 0.65 * n(i + 20)) * s, h = s * (0.22 + 0.18 * n(i + 40));
+        c.strokeStyle = i % 3 ? 'rgba(150,200,90,0.5)' : 'rgba(20,40,10,0.45)';
+        c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + h * 0.1, y - h * 0.6, x + (n(i + 60) - 0.5) * h * 0.8, y - h); c.stroke();
+      }
+      break;
+    }
+    case 'flowers': {
+      const colors = ['#e05a5a', '#e8d060', '#f0ece0', '#a070d0', '#e890b0'];
+      for (let i = 0; i < 6; i++) {
+        const x = sx + (0.1 + 0.8 * n(i)) * s, y = sy + (0.1 + 0.8 * n(i + 10)) * s, r = Math.max(1, s * 0.05);
+        c.fillStyle = colors[Math.floor(n(i + 20) * colors.length)];
+        c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+      }
+      break;
+    }
+    case 'crops': {
+      // Furrow rows aligned across squares
+      const rows = 3, h = s / rows;
+      for (let r = 0; r < rows; r++) {
+        const y = sy + r * h;
+        c.fillStyle = 'rgba(40,28,10,0.35)'; c.fillRect(sx, y + h * 0.65, s, h * 0.35);
+        c.fillStyle = 'rgba(120,170,60,0.55)';
+        for (let i = 0; i < 4; i++) {
+          const x = sx + (i + 0.5) * (s / 4);
+          c.beginPath(); c.ellipse(x, y + h * 0.4, s * 0.06, h * 0.26, 0, 0, Math.PI * 2); c.fill();
+        }
+      }
+      break;
+    }
+    case 'snow': {
+      c.fillStyle = 'rgba(120,150,180,0.12)';
+      c.beginPath(); c.ellipse(sx + s * (0.3 + 0.4 * n(1)), sy + s * (0.3 + 0.4 * n(2)), s * 0.3, s * 0.14, n(3), 0, Math.PI * 2); c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.7)';
+      for (let i = 0; i < 5; i++) {
+        const d = Math.max(0.8, s * 0.04);
+        c.fillRect(sx + n(i + 10) * (s - d), sy + n(i + 20) * (s - d), d, d);
+      }
+      break;
+    }
+
+    // ── Roofs ── row patterns use the absolute row (ty) so courses line up across squares
+    case 'roofTile': {
+      const rows = 3, h = s / rows, w = s / 3;
+      c.save(); c.beginPath(); c.rect(sx, sy, s, s); c.clip();
+      for (let r = 0; r < rows; r++) {
+        const y = sy + r * h, off = ((ty * rows + r) % 2 === 0) ? 0 : w / 2;
+        c.fillStyle = 'rgba(255,190,150,0.12)'; c.fillRect(sx, y, s, h * 0.35);
+        c.strokeStyle = 'rgba(50,12,0,0.5)'; c.lineWidth = Math.max(0.7, s * 0.035);
+        c.beginPath();
+        for (let i = -1; i <= 3; i++) {
+          const cx = sx + i * w + off + w / 2;
+          c.moveTo(cx + w / 2, y);
+          c.arc(cx, y, w / 2, 0, Math.PI);
+        }
+        c.stroke();
+      }
+      c.restore();
+      break;
+    }
+    case 'shingle':
+    case 'slate': {
+      const slate = def.pattern === 'slate';
+      const rows = slate ? 4 : 3, h = s / rows, w = s / (slate ? 3 : 2.5);
+      c.save(); c.beginPath(); c.rect(sx, sy, s, s); c.clip();
+      c.strokeStyle = slate ? 'rgba(10,14,20,0.55)' : 'rgba(30,15,5,0.5)'; c.lineWidth = Math.max(0.6, s * 0.03);
+      for (let r = 0; r < rows; r++) {
+        const y = sy + r * h, row = ty * rows + r, off = (row % 2) * (w / 2);
+        for (let i = -1; i <= Math.ceil(s / w); i++) {
+          const x = sx + i * w + off;
+          // Per-shingle shade, keyed to the shingle's world position
+          const v = tileNoise(Math.round((tx * s + x - sx) / w), row, slate ? 71 : 37) - 0.5;
+          c.fillStyle = v > 0 ? `rgba(255,240,220,${v * (slate ? 0.14 : 0.18)})` : `rgba(0,0,0,${-v * 0.25})`;
+          c.fillRect(x, y, w, h);
+          c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + h); c.stroke();
+        }
+        c.beginPath(); c.moveTo(sx, y + h); c.lineTo(sx + s, y + h); c.stroke();
+      }
+      c.restore();
+      break;
+    }
+    case 'thatch': {
+      const rows = 3, h = s / rows;
+      c.lineWidth = Math.max(0.6, s * 0.03);
+      for (let r = 0; r < rows; r++) {
+        const y = sy + r * h;
+        for (let i = 0; i < 9; i++) {
+          const x = sx + (i + n(r * 10 + i) * 0.8) * (s / 9);
+          c.strokeStyle = i % 2 ? 'rgba(250,225,150,0.35)' : 'rgba(70,45,10,0.35)';
+          c.beginPath(); c.moveTo(x, y + h * 0.05); c.lineTo(x + s * 0.03, y + h * 0.95); c.stroke();
+        }
+        c.fillStyle = 'rgba(50,32,8,0.4)'; c.fillRect(sx, y + h * 0.85, s, h * 0.15);
+      }
+      break;
+    }
+    case 'canvas': {
+      // Alternating panels with a seam, aligned across squares
+      const panels = 2, w = s / panels;
+      for (let i = 0; i < panels; i++) {
+        if ((tx * panels + i) % 2) { c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(sx + i * w, sy, w, s); }
+        c.strokeStyle = 'rgba(60,45,25,0.35)'; c.lineWidth = Math.max(0.5, s * 0.02);
+        c.beginPath(); c.moveTo(sx + i * w, sy); c.lineTo(sx + i * w, sy + s); c.stroke();
+      }
+      break;
+    }
   }
   if (def.difficult && s >= 12) {
     // Difficult-terrain flag in the bottom-right corner
@@ -1108,70 +2258,66 @@ function render() {
     }
   }
 
-  // Infinite grid lines
+  renderHatching(s);
+
+  // Grid lines — with auto walls they're clipped to the rooms (outside reads as
+  // solid rock); otherwise an infinite grid as before
   if (s >= 6) {
     const x0 = Math.floor(-view.ox / s) - 1, x1 = Math.ceil((canvas.width  - view.ox) / s) + 1;
     const y0 = Math.floor(-view.oy / s) - 1, y1 = Math.ceil((canvas.height - view.oy) / s) + 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 0.5;
+    ctx.save();
+    if (wallStyle.auto) {
+      ctx.beginPath();
+      for (const k of grid.keys()) {
+        const [tx, ty] = k.split(',').map(Number);
+        if (tx < x0 || tx > x1 || ty < y0 || ty > y1) continue;
+        ctx.rect(view.ox + tx * s, view.oy + ty * s, s, s);
+      }
+      ctx.clip();
+    }
+    ctx.strokeStyle = wallStyle.auto ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = wallStyle.auto ? Math.max(0.5, s * 0.025) : 0.5;
     ctx.beginPath();
     for (let tx = x0; tx <= x1; tx++) { const x = view.ox + tx * s; ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
     for (let ty = y0; ty <= y1; ty++) { const y = view.oy + ty * s; ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
     ctx.stroke();
+    ctx.restore();
   }
 
+  renderProps(s);
   renderWalls(s);
   renderDoors(s);
   renderSecretDoors(s);
   renderMarkers(s);
+  renderTextboxes(s);
   renderTokens(s);
+  positionTextEditor();
 
   // Rect preview
-  if (activeTool === 'rect' && mouse.down && mouse.btn === 0 && mouse.rectX0 !== -1) {
-    let frx1, fry1, frx2, fry2, rx1, ry1, rx2, ry2, px1, py1, px2, py2;
+  if (activeTool === 'rect' && mouse.down && mouse.btn === 0 && mouse.rectActive) {
+    const area = (Math.abs(mouse.tx - mouse.rectX0) + 1) * (Math.abs(mouse.ty - mouse.rectY0) + 1);
+    const sel = rectSelection(area <= 6000);
+    const { frx1, fry1, frx2, fry2, rx1, ry1, rx2, ry2, R } = sel;
+    let px1, py1, px2, py2;
     if (rectOptions.snapGrid) {
-      rx1 = Math.min(mouse.rectX0, mouse.tx); ry1 = Math.min(mouse.rectY0, mouse.ty);
-      rx2 = Math.max(mouse.rectX0, mouse.tx); ry2 = Math.max(mouse.rectY0, mouse.ty);
-      frx1 = rx1; fry1 = ry1; frx2 = rx2 + 1; fry2 = ry2 + 1;
       ({ x: px1, y: py1 } = toScreen(rx1, ry1));
       ({ x: px2, y: py2 } = toScreen(rx2 + 1, ry2 + 1));
     } else {
-      frx1 = Math.min(mouse.rectRawX0, mouse.rawX); fry1 = Math.min(mouse.rectRawY0, mouse.rawY);
-      frx2 = Math.max(mouse.rectRawX0, mouse.rawX); fry2 = Math.max(mouse.rectRawY0, mouse.rawY);
-      rx1 = Math.floor(frx1); ry1 = Math.floor(fry1);
-      rx2 = Math.max(rx1, Math.ceil(frx2) - 1); ry2 = Math.max(ry1, Math.ceil(fry2) - 1);
       px1 = view.ox + frx1 * s; py1 = view.oy + fry1 * s;
       px2 = view.ox + frx2 * s; py2 = view.oy + fry2 * s;
     }
     const pw = px2 - px1, ph = py2 - py1;
     const isErase = rectOptions.mode === 'erase';
-    const maxR = Math.floor(Math.min(rx2 - rx1 + 1, ry2 - ry1 + 1) / 2);
-    const R = Math.min(rectOptions.cornerRadius, maxR);
-    const seed = (rx1 * 23 ^ ry1 * 47 ^ rx2 * 89 ^ ry2 * 113) | 0;
 
-    // Tile-by-tile preview: show when snap-on, or when corners/rough need live feedback.
+    // Tile-by-tile preview: show when snap-on, or when corners/rough need live feedback,
+    // or when a tiny snap-off rect falls back to whole squares.
     // Snap-off (basic rect): use smooth floating outline so the lack of grid-snapping is visible.
-    const showTiles = rectOptions.snapGrid || R > 0 || rectOptions.rough;
-    if (showTiles && (rx2 - rx1 + 1) * (ry2 - ry1 + 1) <= 6000) {
+    const showTiles = rectOptions.snapGrid || R > 0 || rectOptions.rough || sel.fallback;
+    if (showTiles && sel.tiles) {
       ctx.fillStyle = isErase ? 'rgba(180,50,30,0.52)' : 'rgba(255,215,0,0.28)';
-      for (let gy = ry1; gy <= ry2; gy++) {
-        for (let gx = rx1; gx <= rx2; gx++) {
-          const ok = rectOptions.snapGrid
-            ? tileInRoundedRect(gx, gy, rx1, ry1, rx2, ry2, R)
-            : tileInFractionalRoundedRect(gx, gy, frx1, fry1, frx2, fry2, R);
-          if (!ok) continue;
-          if (rectOptions.rough) {
-            let isEdge;
-            if (rectOptions.snapGrid) {
-              const edx = Math.min(gx - rx1, rx2 - gx), edy = Math.min(gy - ry1, ry2 - gy);
-              isEdge = edx === 0 || edy === 0;
-            } else {
-              isEdge = Math.min((gx+0.5)-frx1, frx2-(gx+0.5), (gy+0.5)-fry1, fry2-(gy+0.5)) < 1;
-            }
-            if (isEdge && tileNoise(gx, gy, seed) < 0.28) continue;
-          }
-          const { x: sx, y: sy } = toScreen(gx, gy);
-          ctx.fillRect(sx, sy, s, s);
-        }
+      for (const [gx, gy] of sel.tiles) {
+        const { x: sx, y: sy } = toScreen(gx, gy);
+        ctx.fillRect(sx, sy, s, s);
       }
     }
 
@@ -1221,7 +2367,7 @@ function render() {
     ctx.fillText(dimLabel, lcx, lcy);
   }
 
-  if (mouse.onCanvas && activeTool !== 'door' && activeTool !== 'secret' && activeTool !== 'wall' && activeTool !== 'marker' && !(activeTool === 'token' && !tokenDragState) && !(activeTool === 'rect' && !rectOptions.snapGrid)) {
+  if (mouse.onCanvas && activeTool !== 'door' && activeTool !== 'secret' && activeTool !== 'wall' && activeTool !== 'marker' && activeTool !== 'text' && activeTool !== 'prop' &&!(activeTool === 'token' && !tokenDragState) && !(activeTool === 'rect' && !rectOptions.snapGrid)) {
     const { x: sx, y: sy } = toScreen(mouse.tx, mouse.ty);
     ctx.strokeStyle = 'rgba(255,215,0,0.75)';
     ctx.lineWidth = Math.max(1, s * 0.06);
@@ -1249,7 +2395,9 @@ function updateStatus() {
   const t = mouse.onCanvas ? getTile(mouse.tx, mouse.ty) : null;
   document.getElementById('status-pos').textContent  = mouse.onCanvas ? `(${mouse.tx}, ${mouse.ty})` : '';
   const here = mouse.onCanvas ? tokens.filter(tk => tk.x === mouse.tx && tk.y === mouse.ty) : [];
-  const hereLabel = here.length ? ` · ${here.map(tk => tk.name || TOKEN_TYPES[tk.type]?.label).join(', ')}` : '';
+  const prop = mouse.onCanvas ? propAtPoint(mouse.rawX, mouse.rawY) : null;
+  const names = [...(prop ? [PROPS[prop.kind].label] : []), ...here.map(tk => tk.name || TOKEN_TYPES[tk.type]?.label)];
+  const hereLabel = names.length ? ` · ${names.join(', ')}` : '';
   document.getElementById('status-tile').textContent = t ? `Tile: ${TILES[t]?.label ?? t}${TILES[t]?.difficult ? ' (difficult)' : ''}${hereLabel}` : '';
   const snapIndicator = activeTool === 'rect' ? (rectOptions.snapGrid ? ' [snap]' : ' [free]') : '';
   document.getElementById('status-tool').textContent =
@@ -1284,6 +2432,54 @@ function onMouseDown(e) {
 
   // Token tool: left-drag a token to move it, right-click to remove it.
   // Right-click on empty space still falls through to panning.
+  // Prop tool: click to place the palette's prop, drag one to move it,
+  // right-click to remove (right-click on empty space still pans).
+  if (activeTool === 'prop' && !spaceDown && (e.button === 0 || e.button === 2)) {
+    const wx = mouse.rawX, wy = mouse.rawY;
+    const hit = propAtPoint(wx, wy);
+    if (e.button === 2) {
+      if (hit) { deleteProp(hit.id); return; }
+    } else {
+      if (propHandleHit(cx, cy)) {
+        const p = props.find(q => q.id === selectedPropId);
+        const { fw, fh } = propDims(p);
+        propDrag = { mode: 'resize', id: p.id, origFw: fw, origFh: fh, undoSaved: false };
+      } else if (hit) {
+        selectPropById(hit.id);
+        propDrag = { mode: 'move', id: hit.id, startWx: wx, startWy: wy, origX: hit.x, origY: hit.y, undoSaved: false };
+      } else {
+        placeProp(selectedProp, tx, ty);
+      }
+      scheduleRender();
+      return;
+    }
+  }
+
+  // Text tool: drag a box to move it, its right edge to resize, empty space to
+  // draw a new one (a plain click makes a default-width box). Right-click deletes.
+  if (activeTool === 'text' && !spaceDown && (e.button === 0 || e.button === 2)) {
+    const hit = textboxAt(cx, cy);
+    if (e.button === 2) {
+      if (hit) { deleteTextbox(hit.id); return; }
+    } else {
+      const s = tileS();
+      if (textboxResizeHit(cx, cy)) {
+        const tb = textboxes.find(t => t.id === selectedTextboxId);
+        textboxDrag = { mode: 'resize', startCx: cx, origW: tb.w, undoSaved: false };
+        return;
+      }
+      if (hit) {
+        selectTextbox(hit.id);
+        textboxDrag = { mode: 'move', startCx: cx, startCy: cy, origX: hit.x, origY: hit.y, undoSaved: false };
+        return;
+      }
+      selectTextbox(null);
+      const wx = (cx - view.ox) / s, wy = (cy - view.oy) / s;
+      textboxDrag = { mode: 'create', x0: wx, y0: wy, x1: wx, y1: wy };
+      return;
+    }
+  }
+
   // Note tool works the same on existing tokens; a click on an empty spot
   // starts a new note there (a click without dragging on a note edits it — see onMouseUp).
   if ((activeTool === 'token' || activeTool === 'note') && !spaceDown && (e.button === 0 || e.button === 2)) {
@@ -1386,7 +2582,7 @@ function onMouseDown(e) {
   if      (activeTool === 'paint') { saveUndo(); paintedInStroke.clear(); applyPaint(tx, ty); }
   else if (activeTool === 'erase') { saveUndo(); paintedInStroke.clear(); applyErase(tx, ty); }
   else if (activeTool === 'fill')  { saveUndo(); floodFill(tx, ty, selectedTile); scheduleRender(); }
-  else if (activeTool === 'rect')  { mouse.rectX0 = tx; mouse.rectY0 = ty; mouse.rectRawX0 = mouse.rawX; mouse.rectRawY0 = mouse.rawY; }
+  else if (activeTool === 'rect')  { mouse.rectActive = true; mouse.rectX0 = tx; mouse.rectY0 = ty; mouse.rectRawX0 = mouse.rawX; mouse.rectRawY0 = mouse.rawY; }
   else if (activeTool === 'pick')  { const t = grid.get(key(tx, ty)); if (t) selectTile(t); }
   scheduleRender();
 }
@@ -1445,6 +2641,71 @@ function onMouseMove(e) {
     }
   }
 
+  mouse.cx = cx; mouse.cy = cy;
+  if (propDrag && mouse.down && mouse.btn === 0) {
+    const p = props.find(q => q.id === propDrag.id);
+    if (p) {
+      const wx = mouse.rawX, wy = mouse.rawY;
+      if (propDrag.mode === 'move') {
+        const nx = propDrag.origX + snapHalf(wx - propDrag.startWx);
+        const ny = propDrag.origY + snapHalf(wy - propDrag.startWy);
+        if (nx !== p.x || ny !== p.y) {
+          if (!propDrag.undoSaved) { saveUndo(); propDrag.undoSaved = true; }
+          p.x = nx; p.y = ny;
+        }
+      } else {
+        // Resize from the bottom-right corner; top-left stays put.
+        // Proportional by default, Shift to stretch freely.
+        let fw = wx - p.x, fh = wy - p.y;
+        if (!e.shiftKey) {
+          const k = Math.max(fw / propDrag.origFw, fh / propDrag.origFh);
+          fw = propDrag.origFw * k; fh = propDrag.origFh * k;
+        }
+        const before = propDims(p);
+        const sizeBefore = `${before.fw}x${before.fh}`;
+        const saved = { w: p.w, h: p.h };
+        setPropFootprint(p, fw, fh);
+        const after = propDims(p);
+        if (`${after.fw}x${after.fh}` !== sizeBefore) {
+          if (!propDrag.undoSaved) {
+            // Snapshot the pre-resize size for undo
+            const now = { w: p.w, h: p.h };
+            if (saved.w === undefined) { delete p.w; delete p.h; } else { p.w = saved.w; p.h = saved.h; }
+            saveUndo(); propDrag.undoSaved = true;
+            if (now.w === undefined) { delete p.w; delete p.h; } else { p.w = now.w; p.h = now.h; }
+          }
+          notifyPropSelect();
+        }
+      }
+    }
+  }
+  if (activeTool === 'prop' && !propDrag) {
+    const over = propHandleHit(cx, cy) ? 'nwse-resize' : propAtPoint(mouse.rawX, mouse.rawY) ? 'move' : '';
+    if (canvas.style.cursor !== over) canvas.style.cursor = over;
+  }
+
+  if (textboxDrag && mouse.down && mouse.btn === 0) {
+    const s = tileS();
+    if (textboxDrag.mode === 'create') {
+      textboxDrag.x1 = (cx - view.ox) / s; textboxDrag.y1 = (cy - view.oy) / s;
+    } else {
+      const tb = textboxes.find(t => t.id === selectedTextboxId);
+      if (tb && (cx !== textboxDrag.startCx || cy !== textboxDrag.startCy)) {
+        if (!textboxDrag.undoSaved) { saveUndo(); textboxDrag.undoSaved = true; }
+        if (textboxDrag.mode === 'move') {
+          tb.x = Math.round((textboxDrag.origX + (cx - textboxDrag.startCx) / s) * 20) / 20;
+          tb.y = Math.round((textboxDrag.origY + (cy - textboxDrag.startCy) / s) * 20) / 20;
+        } else {
+          tb.w = Math.max(1, Math.round((textboxDrag.origW + (cx - textboxDrag.startCx) / s) * 20) / 20);
+        }
+      }
+    }
+  }
+  if (activeTool === 'text') {
+    const over = textboxResizeHit(cx, cy) ? 'ew-resize' : textboxAt(cx, cy) ? 'move' : 'text';
+    if (canvas.style.cursor !== over) canvas.style.cursor = over;
+  }
+
   // Hover preview for notes (any tool, when not mid-drag)
   if (!mouse.down) {
     const hov = tokenAtPoint(cx, cy);
@@ -1481,6 +2742,23 @@ function onMouseUp(e) {
   if (e.button === 0 && activeTool === 'marker' && markerDragState) {
     markerDragState = null;
   }
+  if (e.button === 0 && propDrag) {
+    propDrag = null;
+    scheduleRender();
+  }
+  if (e.button === 0 && textboxDrag) {
+    const d = textboxDrag;
+    textboxDrag = null;
+    if (d.mode === 'create') {
+      const w = Math.abs(d.x1 - d.x0);
+      // A click (or tiny drag) gets a sensible default width
+      if (w < 0.5) createTextbox(d.x0, d.y0, 4);
+      else createTextbox(Math.min(d.x0, d.x1), Math.min(d.y0, d.y1), w);
+    }
+    if (e.button === mouse.btn) { mouse.down = false; mouse.btn = -1; }
+    scheduleRender();
+    return;
+  }
   if (e.button === 0 && tokenDragState) {
     const tok = tokens.find(t => t.id === tokenDragState.id);
     if (tok && !tokenDragState.undoSaved && tok.type === 'note' && activeTool === 'note') {
@@ -1496,44 +2774,12 @@ function onMouseUp(e) {
     tokenDragState = null;
     notifyTokensChanged(); scheduleRender();
   }
-  if (e.button === 0 && activeTool === 'rect' && mouse.rectX0 !== -1) {
-    let x1, y1, x2, y2;
-    let frx1 = 0, fry1 = 0, frx2 = 0, fry2 = 0;
-    if (rectOptions.snapGrid) {
-      x1 = Math.min(mouse.rectX0, mouse.tx); y1 = Math.min(mouse.rectY0, mouse.ty);
-      x2 = Math.max(mouse.rectX0, mouse.tx); y2 = Math.max(mouse.rectY0, mouse.ty);
-      frx1 = x1; fry1 = y1; frx2 = x2 + 1; fry2 = y2 + 1;
-    } else {
-      frx1 = Math.min(mouse.rectRawX0, mouse.rawX); fry1 = Math.min(mouse.rectRawY0, mouse.rawY);
-      frx2 = Math.max(mouse.rectRawX0, mouse.rawX); fry2 = Math.max(mouse.rectRawY0, mouse.rawY);
-      x1 = Math.floor(frx1); y1 = Math.floor(fry1);
-      x2 = Math.max(x1, Math.ceil(frx2) - 1); y2 = Math.max(y1, Math.ceil(fry2) - 1);
-    }
+  if (e.button === 0 && activeTool === 'rect' && mouse.rectActive) {
+    const sel = rectSelection();
     saveUndo();
     const tileToSet = rectOptions.mode === 'draw' ? selectedTile : 'stone';
-    const maxR = Math.floor(Math.min(x2 - x1 + 1, y2 - y1 + 1) / 2);
-    const R    = Math.min(rectOptions.cornerRadius, maxR);
-    const seed = (x1 * 23 ^ y1 * 47 ^ x2 * 89 ^ y2 * 113) | 0;
-    for (let y = y1; y <= y2; y++) {
-      for (let x = x1; x <= x2; x++) {
-        const ok = rectOptions.snapGrid
-          ? tileInRoundedRect(x, y, x1, y1, x2, y2, R)
-          : tileInFractionalRoundedRect(x, y, frx1, fry1, frx2, fry2, R);
-        if (!ok) continue;
-        if (rectOptions.rough) {
-          let isEdge;
-          if (rectOptions.snapGrid) {
-            const edx = Math.min(x - x1, x2 - x), edy = Math.min(y - y1, y2 - y);
-            isEdge = edx === 0 || edy === 0;
-          } else {
-            isEdge = Math.min((x+0.5)-frx1, frx2-(x+0.5), (y+0.5)-fry1, fry2-(y+0.5)) < 1;
-          }
-          if (isEdge && tileNoise(x, y, seed) < 0.28) continue;
-        }
-        setTile(x, y, tileToSet);
-      }
-    }
-    mouse.rectX0 = -1; mouse.rectY0 = -1; scheduleRender();
+    for (const [x, y] of sel.tiles) setTile(x, y, tileToSet);
+    mouse.rectActive = false; scheduleRender();
   }
   if (e.button === mouse.btn) { mouse.down = false; mouse.btn = -1; }
 }
@@ -1547,6 +2793,12 @@ function onDoubleClick(e) {
     return;
   }
   if (activeTool === 'note') return;
+  if (activeTool === 'text') {
+    const { cx, cy } = getPos(e);
+    const hit = textboxAt(cx, cy);
+    if (hit) { selectTextbox(hit.id); openTextEditor(hit, false); }
+    return;
+  }
   if (activeTool !== 'marker') return;
   const { cx, cy } = getPos(e);
   const hit = markerAtPoint(cx, cy);
@@ -1597,9 +2849,26 @@ function onKeyDown(e) {
     return;
   }
   if (isTypingTarget(e.target)) return;
+  if (activeTool === 'prop') {
+    if (e.key === 'q' || e.key === 'Q') { e.preventDefault(); rotateProp(e.shiftKey ? -1 : 1); return; }
+    if (selectedPropId && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); deleteProp(selectedPropId); return; }
+    if (selectedPropId && (e.key === '=' || e.key === '+')) { e.preventDefault(); scaleProp(1); return; }
+    if (selectedPropId && (e.key === '-' || e.key === '_')) { e.preventDefault(); scaleProp(-1); return; }
+    if (selectedPropId && e.key === '0') { e.preventDefault(); scaleProp(0); return; }
+    if (e.key === 'Escape') { selectPropById(null); return; }
+  }
+  if (activeTool === 'text' && selectedTextboxId) {
+    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteTextbox(selectedTextboxId); return; }
+    if (e.key === 'Escape') { selectTextbox(null); return; }
+    if (e.key === 'Enter') {
+      const tb = textboxes.find(t => t.id === selectedTextboxId);
+      if (tb) { e.preventDefault(); openTextEditor(tb, false); }
+      return;
+    }
+  }
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); redo(); return; }
-  const toolKeys = { b: 'paint', e: 'erase', f: 'fill', r: 'rect', p: 'pick', d: 'door', s: 'secret', w: 'wall', m: 'marker', t: 'token', n: 'note' };
+  const toolKeys = { b: 'paint', e: 'erase', f: 'fill', r: 'rect', p: 'pick', d: 'door', s: 'secret', w: 'wall', m: 'marker', t: 'token', n: 'note', x: 'text', o: 'prop' };
   const t = toolKeys[e.key.toLowerCase()];
   if (t) selectTool(t);
 }
@@ -1625,6 +2894,13 @@ function selectTool(tool) {
   activeTool = tool;
   if (tool !== 'marker') { selectedMarkerId = null; markerDragState = null; }
   if (tool !== 'token' && tool !== 'note') tokenDragState = null;
+  if (tool !== 'prop') { propDrag = null; if (selectedPropId) selectPropById(null); if (canvas && activeTool !== 'text') canvas.style.cursor = ''; }
+  if (tool !== 'text') {
+    commitTextEdit();
+    textboxDrag = null;
+    if (selectedTextboxId) { selectedTextboxId = null; notifyTextboxSelect(); }
+    if (canvas) canvas.style.cursor = '';
+  }
   document.querySelectorAll('.tool-btn').forEach(el => el.classList.toggle('active', el.dataset.tool === tool));
   window.__editorOnToolChanged?.(tool);
   scheduleRender();
@@ -1642,6 +2918,8 @@ function levelToRecord(lv) {
     walls:       Array.from(lv.walls),
     markers:     (lv.markers || []).map(m => ({...m})),
     tokens:      (lv.tokens  || []).map(t => ({...t})),
+    textboxes:   (lv.textboxes || []).map(t => ({...t})),
+    props:       (lv.props || []).map(p => ({...p})),
   };
 }
 
@@ -1663,6 +2941,22 @@ function recordToLevel(rec) {
       const t = { id: tk.id, x: tk.x, y: tk.y, type: tk.type, refId: tk.refId ?? null, name: tk.name ?? '' };
       if (typeof tk.text === 'string') t.text = tk.text;
       lv.tokens.push(t);
+    }
+  }
+  for (const p of (rec.props || [])) {
+    if (p && p.id && PROPS[p.kind] && Number.isFinite(p.x) && Number.isFinite(p.y)) {
+      const pr = { id: p.id, kind: p.kind, x: p.x, y: p.y, rot: ((p.rot | 0) % 4 + 4) % 4 };
+      if (Number.isFinite(p.w) && Number.isFinite(p.h) && p.w >= PROP_MIN && p.h >= PROP_MIN) { pr.w = p.w; pr.h = p.h; }
+      lv.props.push(pr);
+    }
+  }
+  for (const tb of (rec.textboxes || [])) {
+    if (tb && tb.id && Number.isFinite(tb.x) && Number.isFinite(tb.y) && typeof tb.text === 'string') {
+      lv.textboxes.push({
+        id: tb.id, x: tb.x, y: tb.y, w: Number.isFinite(tb.w) && tb.w > 0 ? tb.w : 4, text: tb.text,
+        size: TEXTBOX_SIZES[tb.size] ? tb.size : 'm', color: tb.color || '#e8e0d0',
+        bg: ['dark', 'parchment', 'none'].includes(tb.bg) ? tb.bg : 'dark',
+      });
     }
   }
   return lv;
@@ -1699,6 +2993,7 @@ function currentData() {
     name: mapName,
     levels: levels.map(levelToRecord),
     activeLevel: currentLevelIdx,
+    wallStyle: { ...wallStyle },
     // Legacy fields kept so play-tab renderer isn't broken
     buildings: [], entryX: 0, entryY: 0, tierTitle: 'Dungeon',
   };
@@ -1727,6 +3022,7 @@ function importMap(file) {
       const d = JSON.parse(ev.target.result);
       saveUndo();
       mapName = d.name || 'Imported Dungeon';
+      setWallStyle({ ...WALL_STYLE_DEFAULTS, ...(d.wallStyle || {}) });
       if (d.levels && Array.isArray(d.levels)) {
         applyLoadedLevels(d.levels.map(recordToLevel), d.activeLevel ?? 0);
       } else {
@@ -1802,6 +3098,38 @@ function buildPalette() {
       btn.appendChild(sw); btn.appendChild(lb); container.appendChild(btn);
     }
   }
+
+  // Props — click to pick (switches to the Prop tool) or drag straight onto the map
+  const listed = new Set(Object.values(PROP_CATS).flat());
+  const groups = [...Object.entries(PROP_CATS), ['Other', Object.keys(PROPS).filter(k => !listed.has(k))]];
+  for (const [cat, keys] of groups) {
+    const valid = keys.filter(k => PROPS[k]);
+    if (!valid.length) continue;
+    const h = document.createElement('div');
+    h.className = 'palette-cat'; h.textContent = `Props · ${cat}`;
+    container.appendChild(h);
+    for (const k of valid) addPropButton(k, PROPS[k]);
+  }
+  document.querySelectorAll('.palette-prop').forEach(el => el.classList.toggle('selected', el.dataset.prop === selectedProp));
+
+  function addPropButton(k, def) {
+    const btn = document.createElement('button');
+    btn.className = 'palette-tile palette-prop'; btn.dataset.prop = k;
+    btn.title = `${def.label} (${def.w}×${def.h}) — click, or drag onto the map`;
+    btn.draggable = true;
+    btn.onclick = () => selectPropKind(k);
+    btn.addEventListener('dragstart', e => {
+      e.dataTransfer.setData(TOKEN_DRAG_MIME, JSON.stringify({ type: 'prop', prop: k }));
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+    const sw = document.createElement('span'); sw.className = 'palette-swatch prop-swatch';
+    const cv = document.createElement('canvas'); cv.width = cv.height = 36;
+    const size = 34 / Math.max(def.w, def.h);
+    drawProp(cv.getContext('2d'), { kind: k, rot: 0 }, (36 - def.w * size) / 2, (36 - def.h * size) / 2, size);
+    sw.appendChild(cv);
+    const lb = document.createElement('span'); lb.className = 'palette-label'; lb.textContent = def.label;
+    btn.appendChild(sw); btn.appendChild(lb); container.appendChild(btn);
+  }
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
@@ -1823,6 +3151,7 @@ async function init() {
         mapName = item.name || 'Untitled Dungeon';
         document.getElementById('input-name').value = mapName;
         const d = item.data;
+        setWallStyle({ ...WALL_STYLE_DEFAULTS, ...(d.wallStyle || {}) }, { notify: false });
         if (d.levels && Array.isArray(d.levels)) {
           applyLoadedLevels(d.levels.map(recordToLevel), d.activeLevel ?? 0);
         } else {
@@ -1832,6 +3161,7 @@ async function init() {
     } catch { /* start fresh */ }
   }
 
+  window.__editorOnWallStyle?.({ ...wallStyle });
   buildPalette();
   selectTile('floor');
   selectTool('rect');
@@ -1903,6 +3233,11 @@ window.editorSetMarkerSubTool  = (opts) => {
 };
 
 window.editorRemoveToken = removeToken;
+window.editorSetTextboxStyle = setTextboxStyle;
+window.editorRotateProp      = rotateProp;
+window.editorScaleProp       = scaleProp;
+window.editorDeleteProp      = () => deleteProp();
+window.editorSetWallStyle    = (opts) => setWallStyle(opts);
 window.editorSaveNote    = saveNote;
 window.editorEditNote    = (id) => {
   const tok = tokens.find(t => t.id === id && t.type === 'note');

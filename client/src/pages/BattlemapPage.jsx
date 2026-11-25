@@ -11,7 +11,9 @@ const CONTENT_TYPES = [
   { type: 'item',     label: 'Items',     single: 'item',     canCreate: true },
   { type: 'article',  label: 'Articles',  single: 'article',  canCreate: false },
 ];
-const CONTENT_OPEN_PATHS = { article: '/create/article', creature: '/create/creature', item: '/create/item' };
+// Light colours for dark/clear boxes, plus a dark ink for parchment
+const TEXT_COLORS = ['#e8e0d0', '#c9a84c', '#c05050', '#4a80d0', '#50a850', '#2a2218'];
+const CONTENT_OPEN_PATHS ={ article: '/create/article', creature: '/create/creature', item: '/create/item' };
 
 export default function EditorPage() {
   const [searchParams] = useSearchParams();
@@ -38,6 +40,11 @@ export default function EditorPage() {
   const [placed, setPlaced]              = useState([]);
   const [noteEdit, setNoteEdit]          = useState(null); // { id|null, x, y, name, text, screenX, screenY }
   const [noteHover, setNoteHover]        = useState(null);
+  const [textStyle, setTextStyle]        = useState({ size: 'm', color: '#e8e0d0', bg: 'dark' });
+  const [textSelected, setTextSelected]  = useState(false);
+  const [wallStyle, setWallStyleState]   = useState({ auto: true, hatch: true, color: 'ink', weight: 'm' });
+  const [wallBarOpen, setWallBarOpen]    = useState(false);
+  const [propSel, setPropSel]            = useState(null); // { label, w, h, resized } of the selected prop
 
   const sectionRef = useRef(null);
 
@@ -65,6 +72,17 @@ export default function EditorPage() {
     }
   }
 
+  function applyWallStyle(patch) {
+    setWallStyleState(s => ({ ...s, ...patch }));
+    window.editorSetWallStyle?.(patch);
+  }
+
+  // Applies to the selected box (if any) and becomes the default for new ones
+  function applyTextStyle(patch) {
+    setTextStyle(s => ({ ...s, ...patch }));
+    window.editorSetTextboxStyle?.(patch);
+  }
+
   function contentDragStart(e, type, item) {
     e.dataTransfer.setData(TOKEN_DRAG_MIME, JSON.stringify({ type, id: item.id, name: item.name }));
     e.dataTransfer.effectAllowed = 'copy';
@@ -75,6 +93,13 @@ export default function EditorPage() {
     window.__editorOnTokensChanged = (list) => setPlaced(list);
     window.__editorOnNoteEdit  = (note) => { setNoteHover(null); setNoteEdit(note); };
     window.__editorOnNoteHover = (note) => setNoteHover(note);
+    window.__editorOnWallStyle = (style) => setWallStyleState(style);
+    window.__editorOnPropSelect = (sel) => setPropSel(sel);
+    // Selecting a text box shows its style in the sub-toolbar
+    window.__editorOnTextboxSelect = (style) => {
+      setTextSelected(!!style);
+      if (style) setTextStyle(style);
+    };
     window.__editorOnTokenOpen = (tok) => {
       const path = CONTENT_OPEN_PATHS[tok.type];
       // New tab so unsaved dungeon edits aren't lost
@@ -101,6 +126,9 @@ export default function EditorPage() {
       window.__editorOnTokenOpen     = null;
       window.__editorOnNoteEdit      = null;
       window.__editorOnNoteHover     = null;
+      window.__editorOnTextboxSelect = null;
+      window.__editorOnWallStyle     = null;
+      window.__editorOnPropSelect    = null;
       const s = document.querySelector('script[src="/editor.js"]');
       if (s) document.body.removeChild(s);
     };
@@ -220,6 +248,8 @@ export default function EditorPage() {
         <button className="tool-btn" data-tool="marker">Marker <span className="key">M</span></button>
         <button className="tool-btn" data-tool="token">Token <span className="key">T</span></button>
         <button className="tool-btn" data-tool="note">Note <span className="key">N</span></button>
+        <button className="tool-btn" data-tool="text">Text <span className="key">X</span></button>
+        <button className="tool-btn" data-tool="prop">Prop <span className="key">O</span></button>
         <div className="tbsep" />
         <button id="btn-undo"    className="icon-btn">↩ Undo</button>
         <button id="btn-redo"    className="icon-btn">↪ Redo</button>
@@ -231,6 +261,13 @@ export default function EditorPage() {
           title="Toggle cross-section side view"
         >
           ⊟ Section
+        </button>
+        <button
+          className={`icon-btn${wallBarOpen ? ' active' : ''}`}
+          onClick={() => setWallBarOpen(o => !o)}
+          title="Wall style — automatic room walls, hatching, colour, thickness"
+        >
+          ▦ Wall Style
         </button>
         <div id="selected-info">
           Selected: <span id="selected-tile-swatch" /><span id="selected-tile-name">Floor</span>
@@ -287,6 +324,82 @@ export default function EditorPage() {
       {activeTool === 'note' && (
         <div id="token-subtoolbar">
           <span className="mst-hint">Click a square to add a note · Click a note to edit · Drag to move · Right-click to remove · Hover any note to read it</span>
+        </div>
+      )}
+
+      {(wallBarOpen || ['wall', 'door', 'secret'].includes(activeTool)) && (
+        <div id="token-subtoolbar">
+          <span className="mst-label">Walls</span>
+          <button className={`mst-btn${wallStyle.auto ? ' active' : ''}`} onClick={() => applyWallStyle({ auto: !wallStyle.auto })}
+            title="Draw walls automatically wherever floor meets empty space / Wall tiles">Auto room walls</button>
+          <button className={`mst-btn${wallStyle.hatch ? ' active' : ''}`} onClick={() => applyWallStyle({ hatch: !wallStyle.hatch })}
+            disabled={!wallStyle.auto} title="Cross-hatching around the outside of rooms">Hatching</button>
+          <div className="tbsep" />
+          <span className="mst-label">Colour</span>
+          <button className={`mst-btn${wallStyle.color === 'ink' ? ' active' : ''}`} onClick={() => applyWallStyle({ color: 'ink' })}>Ink</button>
+          <button className={`mst-btn${wallStyle.color === 'bone' ? ' active' : ''}`} onClick={() => applyWallStyle({ color: 'bone' })}>Bone</button>
+          <div className="tbsep" />
+          <span className="mst-label">Thickness</span>
+          {[['s', 'Thin'], ['m', 'Normal'], ['l', 'Thick']].map(([k, label]) => (
+            <button key={k} className={`mst-btn${wallStyle.weight === k ? ' active' : ''}`} onClick={() => applyWallStyle({ weight: k })}>{label}</button>
+          ))}
+          <div className="tbsep" />
+          <span className="mst-hint">Wall tile and Wall tool draw the same walls · Doors cut openings · Saved with the map</span>
+        </div>
+      )}
+
+      {activeTool === 'prop' && (
+        <div id="token-subtoolbar">
+          {propSel ? (
+            <>
+              <span className="mst-label">Selected</span>
+              <span className="prop-sel-name">{propSel.label} · {fmtSize(propSel.w)}×{fmtSize(propSel.h)}</span>
+              <div className="tbsep" />
+            </>
+          ) : (
+            <><span className="mst-label">Next prop</span><div className="tbsep" /></>
+          )}
+          <span className="mst-label">Rotate</span>
+          <button className="mst-btn" onClick={() => window.editorRotateProp?.(-1)} title="Rotate left (Shift+Q)">⟲</button>
+          <button className="mst-btn" onClick={() => window.editorRotateProp?.(1)} title="Rotate right (Q)">⟳</button>
+          <div className="tbsep" />
+          <span className="mst-label">Size</span>
+          <button className="mst-btn" disabled={!propSel} onClick={() => window.editorScaleProp?.(-1)} title="Smaller (−)">−</button>
+          <button className="mst-btn" disabled={!propSel} onClick={() => window.editorScaleProp?.(1)} title="Larger (+)">+</button>
+          <button className="mst-btn" disabled={!propSel?.resized} onClick={() => window.editorScaleProp?.(0)} title="Reset to default size (0)">Reset</button>
+          <div className="tbsep" />
+          <button className="mst-btn prop-delete" disabled={!propSel} onClick={() => window.editorDeleteProp?.()} title="Delete (Del / right-click)">Delete</button>
+          <div className="tbsep" />
+          <span className="mst-hint">Click to place · Drag to move · Drag the corner handle to resize (Shift = stretch) · The floor underneath is kept</span>
+        </div>
+      )}
+
+      {activeTool === 'text' && (
+        <div id="token-subtoolbar">
+          <span className="mst-label">{textSelected ? 'Selected' : 'New boxes'}</span>
+          <div className="tbsep" />
+          <span className="mst-label">Size</span>
+          {[['s', 'S'], ['m', 'M'], ['l', 'L'], ['xl', 'XL']].map(([k, label]) => (
+            <button key={k} className={`mst-btn${textStyle.size === k ? ' active' : ''}`} onClick={() => applyTextStyle({ size: k })}>{label}</button>
+          ))}
+          <div className="tbsep" />
+          <span className="mst-label">Color</span>
+          {TEXT_COLORS.map(c => (
+            <button
+              key={c}
+              className={`mst-color${textStyle.color === c ? ' active' : ''}`}
+              style={{ '--mc': c }}
+              onClick={() => applyTextStyle({ color: c })}
+              title={c}
+            />
+          ))}
+          <div className="tbsep" />
+          <span className="mst-label">Background</span>
+          {[['dark', 'Dark'], ['parchment', 'Parchment'], ['none', 'None']].map(([k, label]) => (
+            <button key={k} className={`mst-bg bg-${k}${textStyle.bg === k ? ' active' : ''}`} onClick={() => applyTextStyle({ bg: k })}>{label}</button>
+          ))}
+          <div className="tbsep" />
+          <span className="mst-hint">Drag to draw a box or click to place · Drag to move · Drag right edge to resize · Double-click or Enter to edit · Del / right-click to remove</span>
         </div>
       )}
 
@@ -374,6 +487,17 @@ export default function EditorPage() {
           <div className="layers-header content-header">
             Content
             <button className="content-refresh" onClick={refreshContent} title="Reload from library">↻</button>
+          </div>
+          <div
+            className="tb-chip"
+            draggable
+            onDragStart={e => {
+              e.dataTransfer.setData(TOKEN_DRAG_MIME, JSON.stringify({ type: 'textbox' }));
+              e.dataTransfer.effectAllowed = 'copy';
+            }}
+            title="Drag onto the map to add a text box"
+          >
+            <span className="tb-chip-icon">T</span> Text box
           </div>
           <input
             className="content-filter"
@@ -557,4 +681,10 @@ function NoteEditor({ note, onClose }) {
       </div>
     </>
   );
+}
+
+// 1 → "1", 1.5 → "1½"
+function fmtSize(n) {
+  const whole = Math.floor(n);
+  return n - whole === 0.5 ? `${whole || ''}½` : String(n);
 }
