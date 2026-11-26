@@ -496,6 +496,7 @@ export default function HexmapEditorPage() {
           ))}
         </div>
         <button className="hx-layer-add" onClick={addLayer}>+ Layer</button>
+        <button className="hx-layer-add" onClick={() => window.hexmapDuplicateLayer?.()} title="Copy the current layer and everything on it">⧉ Duplicate</button>
         <div className="hx-tbsep" />
         {activeLayerIdx > 0 && (
           <button

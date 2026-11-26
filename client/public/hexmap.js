@@ -1002,6 +1002,25 @@
     window.__hexmapOnLinksChanged?.();
   }
 
+  // Copy a layer (biomes, links, painted attributes, routes) and insert the
+  // copy just after it. Routes get fresh ids; undo history starts empty.
+  function duplicateLayer(idx = currentLayerIdx) {
+    const src = layers[idx];
+    if (!src) return;
+    const copy = createLayer(`${src.name} copy`);
+    copy.grid = new Map(src.grid);
+    copy.hexLinks = new Map([...src.hexLinks].map(([k, links]) => [k, links.map(l => ({ ...l }))]));
+    copy.attributes = new Map([...src.attributes].map(([attr, m]) =>
+      [attr, new Map([...m].map(([k, v]) => [k, { ...v }]))]));
+    copy.routes = src.routes.map(r => ({ ...structuredClone(r), id: crypto.randomUUID() }));
+    layers.splice(idx + 1, 0, copy);
+    currentLayerIdx = idx + 1;
+    updateToolbar();
+    scheduleRender();
+    notifyLayersChanged();
+    window.__hexmapOnLinksChanged?.();
+  }
+
   function deleteLayer(idx) {
     if (layers.length <= 1 || idx < 0 || idx >= layers.length) return;
     layers.splice(idx, 1);
@@ -2310,6 +2329,7 @@
 
     window.hexmapSwitchLayer   = switchLayer;
     window.hexmapAddLayer      = addLayer;
+    window.hexmapDuplicateLayer = duplicateLayer;
     window.hexmapDeleteLayer   = deleteLayer;
     window.hexmapRenameLayer   = renameLayer;
     window.hexmapReorderLayer  = reorderLayer;
@@ -2363,6 +2383,7 @@
       window.hexmapGetActiveLayerIndex = null;
       window.hexmapSwitchLayer       = null;
       window.hexmapAddLayer          = null;
+      window.hexmapDuplicateLayer    = null;
       window.hexmapDeleteLayer       = null;
       window.hexmapRenameLayer       = null;
       window.hexmapReorderLayer      = null;

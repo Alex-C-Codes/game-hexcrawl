@@ -45,6 +45,7 @@ export default function EditorPage() {
   const [wallStyle, setWallStyleState]   = useState({ auto: true, hatch: true, color: 'ink', weight: 'm' });
   const [wallBarOpen, setWallBarOpen]    = useState(false);
   const [propSel, setPropSel]            = useState(null); // { label, w, h, resized } of the selected prop
+  const [propSnap, setPropSnap]          = useState('half');
 
   const sectionRef = useRef(null);
 
@@ -359,6 +360,16 @@ export default function EditorPage() {
           ) : (
             <><span className="mst-label">Next prop</span><div className="tbsep" /></>
           )}
+          <span className="mst-label">Snap</span>
+          {[
+            ['half', 'Lines', 'Square centres, grid lines and corners'],
+            ['tile', 'Squares', 'Square centres only'],
+            ['free', 'Free', 'No snapping (or hold Alt with any setting)'],
+          ].map(([k, label, title]) => (
+            <button key={k} className={`mst-btn${propSnap === k ? ' active' : ''}`} title={title}
+              onClick={() => { setPropSnap(k); window.editorSetPropSnap?.(k); }}>{label}</button>
+          ))}
+          <div className="tbsep" />
           <span className="mst-label">Rotate</span>
           <button className="mst-btn" onClick={() => window.editorRotateProp?.(-1)} title="Rotate left (Shift+Q)">⟲</button>
           <button className="mst-btn" onClick={() => window.editorRotateProp?.(1)} title="Rotate right (Q)">⟳</button>
@@ -370,7 +381,7 @@ export default function EditorPage() {
           <div className="tbsep" />
           <button className="mst-btn prop-delete" disabled={!propSel} onClick={() => window.editorDeleteProp?.()} title="Delete (Del / right-click)">Delete</button>
           <div className="tbsep" />
-          <span className="mst-hint">Click to place · Drag to move · Drag the corner handle to resize (Shift = stretch) · The floor underneath is kept</span>
+          <span className="mst-hint">Click to place · Drag to move (Alt = no snap) · Drag the corner handle to resize (Shift = stretch) · The floor underneath is kept</span>
         </div>
       )}
 
@@ -446,6 +457,7 @@ export default function EditorPage() {
 
           <div className="layers-footer">
             <button className="layer-add" onClick={() => window.editorAddLevel?.()}>+ Layer</button>
+            <button className="layer-add" onClick={() => window.editorDuplicateLevel?.()} title="Copy the current layer and everything on it">⧉ Duplicate</button>
             {activeLevel > 0 && (
               <button
                 className={`layer-ghost${ghostAboveOn ? ' active' : ''}`}

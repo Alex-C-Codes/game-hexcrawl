@@ -117,7 +117,10 @@ let props          = levels[0].props;
 let selectedProp   = 'coffin';   // palette choice for new props
 let propRot        = 0;          // rotation for new props
 let selectedPropId = null;
-let propDrag       = null;       // { id, startTx, startTy, origX, origY, undoSaved }
+let propDrag       = null;       // { mode, id, startWx, startWy, origX, origY, ... undoSaved }
+// How a prop's centre snaps: 'half' = square centres, grid lines and corners;
+// 'tile' = square centres only (footprint fills whole squares); 'free' = none.
+let propSnap       = 'half';
 let dropHoverTile    = null; // tile under an in-progress drag from the content panel
 let doorHover = null;
 let wallHover = null;
@@ -217,6 +220,31 @@ function addLevel() {
   loadLevelRefs(lv);
   view.ox = canvas?.width / 2 ?? 400; view.oy = canvas?.height / 2 ?? 300;
   notifyLevelsChanged(); scheduleRender();
+}
+
+// Copy a layer (everything on it) and insert the copy just after it.
+// Objects on the copy get fresh ids so the two layers never share anything.
+function duplicateLevel(idx = currentLevelIdx) {
+  if (idx < 0 || idx >= levels.length) return;
+  commitTextEdit();
+  commitLevel();
+  const src = levels[idx];
+  const copy = createLevel(`${src.name} copy`);
+  copy.height      = src.height ?? 10;
+  copy.grid        = new Map(src.grid);
+  copy.doors       = new Set(src.doors);
+  copy.secretDoors = new Set(src.secretDoors);
+  copy.walls       = new Set(src.walls);
+  const fresh = list => (list || []).map(o => ({ ...structuredClone(o), id: crypto.randomUUID() }));
+  copy.markers   = fresh(src.markers);
+  copy.tokens    = fresh(src.tokens);
+  copy.textboxes = fresh(src.textboxes);
+  copy.props     = fresh(src.props);
+  levels.splice(idx + 1, 0, copy);
+  currentLevelIdx = idx + 1;
+  loadLevelRefs(copy);
+  notifyLevelsChanged();
+  scheduleRender();
 }
 
 function reorderLevel(fromIdx, toIdx) {
@@ -1420,10 +1448,21 @@ function propHandleHit(cx, cy) {
 }
 
 // Where a new prop goes so its footprint is centred on the cursor square
-function propAnchor(kind, rot, tx, ty) {
-  const { fw, fh } = propDims({ kind, rot });
-  return { x: tx - Math.floor((fw - 1) / 2), y: ty - Math.floor((fh - 1) / 2) };
+// Top-left for a footprint of `size` squares whose centre should sit at `center`
+function snapAnchor(center, size, mode = propSnap) {
+  if (mode === 'free') return Math.round((center - size / 2) * 100) / 100;
+  if (mode === 'tile') return Math.round(center - size / 2);
+  return snapHalf(center) - size / 2;
 }
+
+// Where a prop goes when its centre is aimed at map point (wx, wy)
+function propAnchor(p, wx, wy, mode = propSnap) {
+  const { fw, fh } = propDims(p);
+  return { x: snapAnchor(wx, fw, mode), y: snapAnchor(wy, fh, mode) };
+}
+
+// Alt held = place/move freely, whatever the snap setting
+const snapModeFor = e => (e?.altKey ? 'free' : propSnap);
 
 function renderProps(s) {
   for (const p of props) {
@@ -1444,7 +1483,7 @@ function renderProps(s) {
   // Placement ghost under the cursor
   if (activeTool === 'prop' && mouse.onCanvas && !propDrag && !spaceDown &&
       !propAtPoint(mouse.rawX, mouse.rawY) && !propHandleHit(mouse.cx ?? -99, mouse.cy ?? -99)) {
-    const a = propAnchor(selectedProp, propRot, mouse.tx, mouse.ty);
+    const a = propAnchor({ kind: selectedProp, rot: propRot }, mouse.rawX, mouse.rawY, mouse.alt ? 'free' : propSnap);
     const { x: px, y: py } = toScreen(a.x, a.y);
     drawProp(ctx, { kind: selectedProp, rot: propRot }, px, py, s, 0.5);
   }
@@ -1463,10 +1502,10 @@ function selectPropById(id) {
   scheduleRender();
 }
 
-function placeProp(kind, tx, ty) {
+function placeProp(kind, wx, wy, mode = propSnap) {
   if (!PROPS[kind]) return;
   saveUndo();
-  const a = propAnchor(kind, propRot, tx, ty);
+  const a = propAnchor({ kind, rot: propRot }, wx, wy, mode);
   const p = { id: crypto.randomUUID(), kind, x: a.x, y: a.y, rot: propRot };
   props.push(p);
   selectPropById(p.id);
@@ -1490,7 +1529,7 @@ function rotateProp(dir = 1) {
   const cx = p.x + before.fw / 2, cy = p.y + before.fh / 2;
   p.rot = (p.rot + dir + 4) % 4;
   const after = propDims(p);
-  p.x = snapHalf(cx - after.fw / 2); p.y = snapHalf(cy - after.fh / 2);
+  p.x = snapAnchor(cx, after.fw); p.y = snapAnchor(cy, after.fh);
   propRot = p.rot;
   scheduleRender();
 }
@@ -1520,7 +1559,7 @@ function scaleProp(step) {
     setPropFootprint(p, before.fw * k, before.fh * k);
   }
   const after = propDims(p);
-  p.x = snapHalf(cx - after.fw / 2); p.y = snapHalf(cy - after.fh / 2);
+  p.x = snapAnchor(cx, after.fw); p.y = snapAnchor(cy, after.fh);
   notifyPropSelect();
   scheduleRender();
 }
@@ -1796,7 +1835,13 @@ function onTokenDrop(e) {
     const { type, id, name } = JSON.parse(raw);
     if (type === 'prop') {
       const kind = JSON.parse(raw).prop;
-      if (PROPS[kind]) { selectPropKind(kind); placeProp(kind, target.x, target.y); canvas.focus(); }
+      if (PROPS[kind]) {
+        const { cx, cy } = getPos(e), s = tileS();
+        const at = (e.clientX || e.clientY)
+          ? { x: (cx - view.ox) / s, y: (cy - view.oy) / s }
+          : { x: target.x + 0.5, y: target.y + 0.5 };
+        selectPropKind(kind); placeProp(kind, at.x, at.y, snapModeFor(e)); canvas.focus();
+      }
       scheduleRender();
       return;
     }
@@ -2448,7 +2493,7 @@ function onMouseDown(e) {
         selectPropById(hit.id);
         propDrag = { mode: 'move', id: hit.id, startWx: wx, startWy: wy, origX: hit.x, origY: hit.y, undoSaved: false };
       } else {
-        placeProp(selectedProp, tx, ty);
+        placeProp(selectedProp, wx, wy, snapModeFor(e));
       }
       scheduleRender();
       return;
@@ -2641,14 +2686,15 @@ function onMouseMove(e) {
     }
   }
 
-  mouse.cx = cx; mouse.cy = cy;
+  mouse.cx = cx; mouse.cy = cy; mouse.alt = e.altKey;
   if (propDrag && mouse.down && mouse.btn === 0) {
     const p = props.find(q => q.id === propDrag.id);
     if (p) {
       const wx = mouse.rawX, wy = mouse.rawY;
       if (propDrag.mode === 'move') {
-        const nx = propDrag.origX + snapHalf(wx - propDrag.startWx);
-        const ny = propDrag.origY + snapHalf(wy - propDrag.startWy);
+        const { fw, fh } = propDims(p), mode = snapModeFor(e);
+        const nx = snapAnchor(propDrag.origX + fw / 2 + (wx - propDrag.startWx), fw, mode);
+        const ny = snapAnchor(propDrag.origY + fh / 2 + (wy - propDrag.startWy), fh, mode);
         if (nx !== p.x || ny !== p.y) {
           if (!propDrag.undoSaved) { saveUndo(); propDrag.undoSaved = true; }
           p.x = nx; p.y = ny;
@@ -3215,6 +3261,7 @@ window.editorAddLevel     = addLevel;
 window.editorDeleteLevel  = deleteLevel;
 window.editorRenameLevel  = renameLevel;
 window.editorReorderLevel = reorderLevel;
+window.editorDuplicateLevel = duplicateLevel;
 window.editorToggleGhostAbove = toggleGhostAbove;
 window.editorToggleGhostBelow = toggleGhostBelow;
 window.editorToggleSection    = toggleSection;
@@ -3236,6 +3283,7 @@ window.editorRemoveToken = removeToken;
 window.editorSetTextboxStyle = setTextboxStyle;
 window.editorRotateProp      = rotateProp;
 window.editorScaleProp       = scaleProp;
+window.editorSetPropSnap     = (mode) => { if (['half', 'tile', 'free'].includes(mode)) { propSnap = mode; scheduleRender(); } };
 window.editorDeleteProp      = () => deleteProp();
 window.editorSetWallStyle    = (opts) => setWallStyle(opts);
 window.editorSaveNote    = saveNote;
