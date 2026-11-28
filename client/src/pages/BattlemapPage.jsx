@@ -46,6 +46,39 @@ export default function EditorPage() {
   const [wallBarOpen, setWallBarOpen]    = useState(false);
   const [propSel, setPropSel]            = useState(null); // { label, w, h, resized } of the selected prop
   const [propSnap, setPropSnap]          = useState('half');
+  const [propKind, setPropKind]          = useState(null); // { label, w, h } the Prop tool places next
+  const [exportTokens, setExportTokens]  = useState(false); // include tokens & notes in PDF/JPG exports
+
+  const mapName = () => document.getElementById('input-name')?.value?.trim() || 'Untitled Dungeon';
+
+  // PDF: one page per non-empty layer, labelled with the layer name
+  const exportPdf = useCallback(async () => {
+    const pages = window.editorExportPages?.('image/jpeg', { allLevels: true, includeTokens: exportTokens });
+    if (!pages?.length) { window.editorShowToast?.('Nothing drawn yet — paint some tiles first.'); return; }
+    const { jsPDF } = await import('jspdf');
+    // 'pt' with 1 image pixel = 1 point keeps the page and image the same size;
+    // orientation must be explicit or jsPDF swaps width/height to force portrait
+    const orient = p => (p.width >= p.height ? 'landscape' : 'portrait');
+    const doc = new jsPDF({ unit: 'pt', format: [pages[0].width, pages[0].height], orientation: orient(pages[0]), compress: true });
+    pages.forEach((page, i) => {
+      if (i > 0) doc.addPage([page.width, page.height], orient(page));
+      doc.addImage(page.dataUrl, 'JPEG', 0, 0, page.width, page.height);
+      if (pages.length > 1) {
+        doc.setFillColor(10, 8, 6); doc.rect(0, 0, Math.min(260, page.width), 34, 'F');
+        doc.setTextColor(201, 168, 76); doc.setFontSize(18); doc.text(page.name, 12, 23);
+      }
+    });
+    doc.save(`${mapName()}.pdf`);
+  }, [exportTokens]);
+
+  // JPG: the current layer only
+  const exportJpg = useCallback(() => {
+    const pages = window.editorExportPages?.('image/jpeg', { includeTokens: exportTokens });
+    if (!pages?.length) { window.editorShowToast?.('Nothing on this layer yet — paint some tiles first.'); return; }
+    const a = document.createElement('a');
+    a.href = pages[0].dataUrl; a.download = `${mapName()} - ${pages[0].name}.jpg`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }, [exportTokens]);
 
   const sectionRef = useRef(null);
 
@@ -96,6 +129,7 @@ export default function EditorPage() {
     window.__editorOnNoteHover = (note) => setNoteHover(note);
     window.__editorOnWallStyle = (style) => setWallStyleState(style);
     window.__editorOnPropSelect = (sel) => setPropSel(sel);
+    window.__editorOnPropKind   = (kind) => setPropKind(kind);
     // Selecting a text box shows its style in the sub-toolbar
     window.__editorOnTextboxSelect = (style) => {
       setTextSelected(!!style);
@@ -130,6 +164,7 @@ export default function EditorPage() {
       window.__editorOnTextboxSelect = null;
       window.__editorOnWallStyle     = null;
       window.__editorOnPropSelect    = null;
+      window.__editorOnPropKind      = null;
       const s = document.querySelector('script[src="/editor.js"]');
       if (s) document.body.removeChild(s);
     };
@@ -232,6 +267,12 @@ export default function EditorPage() {
         <button id="btn-load"   className="hdr-btn">Load JSON</button>
         <button id="btn-save"   className="hdr-btn primary">Save</button>
         <button id="btn-export" className="hdr-btn">Export JSON</button>
+        <button className="hdr-btn" onClick={exportPdf} title="Every layer as its own page">Export PDF</button>
+        <button className="hdr-btn" onClick={exportJpg} title="The current layer as an image">Export JPG</button>
+        <label className="hdr-check" title="Tokens and notes are GM information — leave off for a player handout">
+          <input type="checkbox" checked={exportTokens} onChange={e => setExportTokens(e.target.checked)} />
+          Tokens &amp; notes
+        </label>
         <button id="btn-fit"    className="hdr-btn">Fit View</button>
         <input type="file" id="file-input" accept=".json" style={{ display: 'none' }} />
       </div>
@@ -358,7 +399,11 @@ export default function EditorPage() {
               <div className="tbsep" />
             </>
           ) : (
-            <><span className="mst-label">Next prop</span><div className="tbsep" /></>
+            <>
+              <span className="mst-label">Next prop</span>
+              {propKind && <span className="prop-sel-name">{propKind.label} · {fmtSize(propKind.w)}×{fmtSize(propKind.h)}</span>}
+              <div className="tbsep" />
+            </>
           )}
           <span className="mst-label">Snap</span>
           {[
